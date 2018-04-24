@@ -19,7 +19,7 @@ namespace ByzantineGenerals
             };
 
             communicationService.SetGenerals(generals);
-            communicationService.AssignTraitorousMessenger(generals[4].Id, 1);
+            //communicationService.AssignTraitorousMessenger(generals[4].Id, 1);
 
             foreach(IGeneral general in generals)
             {

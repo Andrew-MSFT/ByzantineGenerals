@@ -9,9 +9,9 @@ namespace ByzantineGenerals.Lib
 
         public IEnumerable<IGeneral> Generals { get; private set; }
 
-        Dictionary<Guid, int> _traitorousMessengers = new Dictionary<Guid, int>();
+        Dictionary<object, int> _traitorousMessengers = new Dictionary<object, int>();
 
-        public Messenger GetMessenger(Guid id)
+        public Messenger GetMessenger(object id)
         {
             bool getsTraitor = _traitorousMessengers.TryGetValue(id, out int remainingTraitors);
 
@@ -30,7 +30,7 @@ namespace ByzantineGenerals.Lib
             this.Generals = generals;
         }
 
-        public void AssignTraitorousMessenger(Guid generalId, int count)
+        public void AssignTraitorousMessenger(object generalId, int count)
         {
             _traitorousMessengers.Add(generalId, count);
         }
