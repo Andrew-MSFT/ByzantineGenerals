@@ -1,4 +1,5 @@
 ﻿using ByzantineGenerals.Lib;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -9,25 +10,32 @@ using System.Security.Cryptography;
 
 namespace ByzantineGenerals.PowBlockchain
 {
-    public class MessageIn
+    public struct MessageIn
     {
         public byte[] PreviousMessageHash { get; set; }
         public int PreviousMessageIdx { get; set; }
         public Decisions Decision { get; set; }
         public RSAParameters PublicKey { get; set; }
         public byte[] Signature { get; set; }
-        
+
     }
 
-    public class MessageOut
+    public struct MessageOut
     {
         public Decisions Decision { get; set; }
         public byte[] RecipientKeyHash { get; set; }
+
+        public byte[] CalculateSHA256()
+        {
+            string serialized = JsonConvert.SerializeObject(this);
+            byte[] thisHash = HashUtilities.ComputeSHA256(serialized);
+            return thisHash;
+        }
     }
 
-    public class Transaction
+    public struct Transaction
     {
-        public List<MessageIn> Inputs { get; set; }
+        public MessageIn Input { get; set; }
         public List<MessageOut> Outputs { get; set; }
     }
 
@@ -44,15 +52,47 @@ namespace ByzantineGenerals.PowBlockchain
 
         private SHA256 _sHA256 = SHA256.Create();
 
-        public Block(long index, List<Transaction> transactions, byte[] previousHash)
+        private Block(List<Transaction> transactions, byte[] previousHash)
         {
             this.Target = HashUtilities.MaxTarget;
-            this.Messages = transactions == null ? new List<Transaction>() : transactions;
+            this.Messages = transactions;
             this.PreviousHash = previousHash;
             this.TimeStamp = DateTime.Now;
-            //this.HashedTransactions = HashUtilities.ComputeSHA256(this.Transactions);
+            this.HashMessages = ComputeMessagesSHA256();
+        }
 
-            CalculateNonce();
+        private Block(Block block)
+        {
+            this.Target = block.Target;
+            this.PreviousHash = (byte[])block.PreviousHash.Clone();
+            this.TimeStamp = block.TimeStamp;
+            this.HashMessages = (byte[])block.HashMessages.Clone();
+            this.Messages = new List<Transaction>();
+
+            foreach (var b in block.Messages)
+            {
+                Transaction message = b;
+                this.Messages.Add(message);
+            }
+        }
+
+        public static Block MineNewBlock(List<Transaction> transactions, byte[] previousHash)
+        {
+            Block block = new Block(transactions, previousHash);
+            block.CalculateNonce();
+            return block;
+        }
+
+        public static Block CopyBlock(Block block)
+        {
+            Block newBlock = new Block(block);
+            return newBlock;
+        }
+
+        private byte[] ComputeMessagesSHA256()
+        {
+            string serialized = JsonConvert.SerializeObject(this.Messages);
+            return HashUtilities.ComputeSHA256(serialized);
         }
 
         private void CalculateNonce()
@@ -75,26 +115,26 @@ namespace ByzantineGenerals.PowBlockchain
             }
         }
 
-        //public bool ContainsOutTransaction(byte[] transactionHash, out TransactionOut output)
-        //{
-        //    output = null;
+        public bool ContainsOutTransaction(byte[] transactionHash, out MessageOut output)
+        {
+            output = new MessageOut();
 
-        //    foreach (Transaction tx in this.Transactions)
-        //    {
-        //        foreach (TransactionOut txOut in tx.Outputs)
-        //        {
-        //            if (txOut.GetSHA256().SequenceEqual(transactionHash))
-        //            {
-        //                output = txOut;
-        //                return true;
-        //            }
-        //        }
-        //    }
+            foreach (Transaction tx in this.Messages)
+            {
+                foreach (MessageOut txOut in tx.Outputs)
+                {
+                    if (txOut.CalculateSHA256().SequenceEqual(transactionHash))
+                    {
+                        output = txOut;
+                        return true;
+                    }
+                }
+            }
 
-        //    return false;
-        //}
+            return false;
+        }
 
-        public byte[] GetSHA256()
+        public byte[] ComputeSHA256()
         {
             byte[] powTarget = this.Target.ToByteArray();
             byte[] timeStamp = Block.ObjectToByteArray(this.TimeStamp);
@@ -116,67 +156,19 @@ namespace ByzantineGenerals.PowBlockchain
             return hashBytes;
         }
 
+        public bool Equals(Block block)
+        {
+            bool e = this.ComputeSHA256().SequenceEqual(block.ComputeSHA256());
+            return e;
+        }
+
         public bool ProofOfWorkIsValid(Block block)
         {
-            byte[] hash = GetSHA256();
+            byte[] hash = ComputeSHA256();
             BigInteger hashValue = new BigInteger(hash);
             BigInteger hashAbs = BigInteger.Abs(hashValue);
             return hashAbs < block.Target;
         }
-
-        // Convert an object to a byte array
-        internal static byte[] ObjectToByteArray(object obj)
-        {
-            BinaryFormatter bf = new BinaryFormatter();
-            using (var ms = new MemoryStream())
-            {
-                bf.Serialize(ms, obj);
-                return ms.ToArray();
-            }
-        }
-
-    }
-
-    public class HashUtilities
-    {
-        const int HashLength = 32;
-        private static SHA256 _sHA256 = SHA256.Create();
-
-        public static BigInteger MaxTarget
-        {
-            get
-            {
-                byte[] bytes = Enumerable.Repeat<byte>(255, HashLength).ToArray();
-                bytes[HashLength - 1] = 127;
-                return new BigInteger(bytes);
-            }
-        }
-        public static BigInteger GetTargetHash(int hashDifficulty)
-        {
-            if (hashDifficulty == 0)
-            {
-                return MaxTarget;
-            }
-
-            byte[] bytes = Enumerable.Repeat<byte>(255, HashLength).ToArray();
-            byte[] zeros = Enumerable.Repeat<byte>(0, hashDifficulty).ToArray();
-            Buffer.BlockCopy(zeros, 0, bytes, HashLength - hashDifficulty, zeros.Length);
-            return new BigInteger(bytes);
-        }
-
-        internal static byte[] ComputeSHA256(byte[] bytes)
-        {
-            var hashBytes = _sHA256.ComputeHash(bytes);
-            return hashBytes;
-        }
-
-        internal static byte[] ComputeSHA256(object obj)
-        {
-            byte[] bytes = ObjectToByteArray(obj);
-            byte[] hash = ComputeSHA256(bytes);
-            return hash;
-        }
-
 
         // Convert an object to a byte array
         internal static byte[] ObjectToByteArray(object obj)
