@@ -1,5 +1,4 @@
-﻿using ByzantineGenerals.Lib;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -14,23 +13,27 @@ namespace ByzantineGenerals.PowBlockchain
         public Decisions Decision { get; private set; }
         public RSAParameters PublicKey { get; private set; }
         public Blockchain MessageChain { get; private set; }
-        private List<Transaction> _inputQueue = new List<Transaction>();
+        private Dictionary<RSAParameters, List<Message>> _inputQueue = new Dictionary<RSAParameters, List<Message>>();
         private Block _myBlock;
         private RSACryptoServiceProvider _rSA = new RSACryptoServiceProvider();
         private MessageService _messageService;
 
-        public General(Decisions decision, MessageService messageService)
+        public General(Decisions decision, MessageService messageService, Blockchain currentChain)
         {
             this.Decision = decision;
             this.PublicKey = _rSA.ExportParameters(false);
+            this.MessageChain = new Blockchain(currentChain);
+
             _messageService = messageService;
+        }
+
+        public void DeclareIninitialPreference()
+        {
+            CreateBaseDecision();
         }
 
         public void Coordinate()
         {
-            InitializeBlockchain();
-            CreateBaseDecision();
-
             MessageIn input = CreateBaseInput();
             List<MessageOut> publicDecisions = new List<MessageOut>();
 
@@ -47,61 +50,31 @@ namespace ByzantineGenerals.PowBlockchain
                     publicDecisions.Add(message);
                 }
             }
-            Transaction tx = new Transaction { Input = input, Outputs = publicDecisions };
+            List<MessageIn> inputs = new List<MessageIn> { input };
+            Message tx = new Message { Input = inputs, Outputs = publicDecisions };
 
             _messageService.BroadCastDecision(tx, this.PublicKey);
         }
 
-        private void InitializeBlockchain()
-        {
-            List<General> generals = _messageService.GetOtherGenerals(this.PublicKey);
-
-            Dictionary<byte[], int> versionCount = new Dictionary<byte[], int>();
-            for (int i = 0; i < generals.Count; i++)
-            {
-                General general = generals[i];
-                if (general.MessageChain != null)
-                {
-                    byte[] chainHash = general.MessageChain.GetChainHash();
-                    if (versionCount.ContainsKey(chainHash))
-                    {
-                        versionCount[chainHash]++;
-                    }
-                    else
-                    {
-                        versionCount.Add(chainHash, 1);
-                    }
-                }
-            }
-
-            if(versionCount.Keys.Count == 0)
-            {
-                this.MessageChain = new Blockchain();
-            }
-            else if(versionCount.Keys.Count == 1)
-            {
-                this.MessageChain = new Blockchain(generals[0].MessageChain.GetBlocks());
-            }
-        }
-
         private void CreateBaseDecision()
         {
-            byte[] decisionInBaseHash = Enumerable.Repeat<byte>(0, 32).ToArray();
+            
             MessageIn baseMessageIn = new MessageIn
             {
                 Decision = this.Decision,
-                PreviousMessageHash = decisionInBaseHash,
-                PreviousMessageIdx = -1,
+                PreviousMessageHash = Block.DecisionInBaseHash,
+                PreviousMessageIdx = Block.DecisionInBaseIndex,
                 PublicKey = this.PublicKey,
-                Signature = decisionInBaseHash
+                Signature = Block.DecisionInSignature
             };
             MessageOut messageOut = new MessageOut
             {
                 Decision = this.Decision,
                 RecipientKeyHash = HashUtilities.ComputeSHA256(this.PublicKey)
             };
+            List<MessageIn> messageInputs = new List<MessageIn> { baseMessageIn };
             List<MessageOut> messageOuts = new List<MessageOut> { messageOut };
-            List<Transaction> transactions = new List<Transaction> { new Transaction { Input = baseMessageIn, Outputs = messageOuts } };
+            List<Message> transactions = new List<Message> { new Message { Input = messageInputs, Outputs = messageOuts } };
             byte[] previousHash = MessageChain.LastBlock.ComputeSHA256();
             Block block = Block.MineNewBlock(transactions, previousHash);
             _myBlock = block;
@@ -127,25 +100,24 @@ namespace ByzantineGenerals.PowBlockchain
         public void NotifyBlockMined(BlockchainMessenger messenger)
         {
             Block block = messenger.MinedBlock;
-            this.MessageChain.Add(block);
+            this.MessageChain?.Add(block);
         }
 
         public void RecieveMessage(BlockchainMessenger messenger)
         {
-            Transaction message = messenger.Message;
-            _inputQueue.Add(message);
+            Message message = messenger.Message;
+            //_inputQueue.Add(message.Input.PublicKey, message);
             if (_inputQueue.Count == _messageService.GetOtherGenerals(this.PublicKey).Count)
             {
-                MineBlock();
+                //MineBlock();
             }
         }
 
-        private void MineBlock()
+        private void MineBlock(List<Message> transactions)
         {
             byte[] previousHash = MessageChain.LastBlock.ComputeSHA256();
-            Block block = Block.MineNewBlock(_inputQueue, previousHash);
+            Block block = Block.MineNewBlock(transactions, previousHash);
 
-            _inputQueue.Clear();
             FinishedMiningBlock(block);
         }
 

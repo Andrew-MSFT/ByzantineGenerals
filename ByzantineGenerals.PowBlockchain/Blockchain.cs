@@ -15,13 +15,13 @@ namespace ByzantineGenerals.PowBlockchain
 
         public Blockchain()
         {
-            Block genesisBlock = Block.MineNewBlock(new List<Transaction>(), GenesisBlockHash);
+            Block genesisBlock = Block.MineNewBlock(new List<Message>(), GenesisBlockHash);
             _blocks.Add(genesisBlock);
         }
 
-        public Blockchain(List<Block> chain)
+        public Blockchain(Blockchain blockchain)
         {
-            foreach (Block block in chain)
+            foreach (Block block in blockchain.GetBlocks())
             {
                 Block newBlock = block;
                 _blocks.Add(newBlock);

@@ -1,5 +1,4 @@
-﻿using ByzantineGenerals.Lib;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -10,6 +9,8 @@ using System.Security.Cryptography;
 
 namespace ByzantineGenerals.PowBlockchain
 {
+    public enum Decisions { NoneRecieved, Attack, Retreat }
+
     public struct MessageIn
     {
         public byte[] PreviousMessageHash { get; set; }
@@ -33,18 +34,22 @@ namespace ByzantineGenerals.PowBlockchain
         }
     }
 
-    public struct Transaction
+    public struct Message
     {
-        public MessageIn Input { get; set; }
+        public List<MessageIn> Input { get; set; }
         public List<MessageOut> Outputs { get; set; }
     }
 
     public class Block
     {
+        public static readonly byte[] DecisionInBaseHash = Enumerable.Repeat<byte>(0, 32).ToArray();
+        public static readonly byte[] DecisionInSignature = Enumerable.Repeat<byte>(1, 32).ToArray();
+        public const int DecisionInBaseIndex = -1;
+
         //Block Header
         public BigInteger Target { get; set; }
         public byte[] PreviousHash { get; set; }
-        public List<Transaction> Messages { get; set; }
+        public List<Message> Messages { get; set; }
         public byte[] HashMessages { get; set; }
         public DateTime TimeStamp { get; set; }
         public int Nonce { get; set; }
@@ -52,7 +57,7 @@ namespace ByzantineGenerals.PowBlockchain
 
         private SHA256 _sHA256 = SHA256.Create();
 
-        private Block(List<Transaction> transactions, byte[] previousHash)
+        private Block(List<Message> transactions, byte[] previousHash)
         {
             this.Target = HashUtilities.MaxTarget;
             this.Messages = transactions;
@@ -67,16 +72,16 @@ namespace ByzantineGenerals.PowBlockchain
             this.PreviousHash = (byte[])block.PreviousHash.Clone();
             this.TimeStamp = block.TimeStamp;
             this.HashMessages = (byte[])block.HashMessages.Clone();
-            this.Messages = new List<Transaction>();
+            this.Messages = new List<Message>();
 
             foreach (var b in block.Messages)
             {
-                Transaction message = b;
+                Message message = b;
                 this.Messages.Add(message);
             }
         }
 
-        public static Block MineNewBlock(List<Transaction> transactions, byte[] previousHash)
+        public static Block MineNewBlock(List<Message> transactions, byte[] previousHash)
         {
             Block block = new Block(transactions, previousHash);
             block.CalculateNonce();
@@ -119,7 +124,7 @@ namespace ByzantineGenerals.PowBlockchain
         {
             output = new MessageOut();
 
-            foreach (Transaction tx in this.Messages)
+            foreach (Message tx in this.Messages)
             {
                 foreach (MessageOut txOut in tx.Outputs)
                 {

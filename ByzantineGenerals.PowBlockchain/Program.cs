@@ -1,5 +1,4 @@
-﻿using ByzantineGenerals.Lib;
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace ByzantineGenerals.PowBlockchain

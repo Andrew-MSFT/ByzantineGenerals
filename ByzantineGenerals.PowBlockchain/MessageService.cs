@@ -7,10 +7,10 @@ namespace ByzantineGenerals.PowBlockchain
 {
     class BlockchainMessenger
     {
-        public Transaction Message { get; private set; }
+        public Message Message { get; private set; }
         public Block MinedBlock { get; private set; }
 
-        public void SetMessage(Transaction transaction)
+        public void SetMessage(Message transaction)
         {
             this.Message = transaction;
         }
@@ -35,13 +35,13 @@ namespace ByzantineGenerals.PowBlockchain
             return this.Generals.Where(general => !general.PublicKey.Equals(publicKey)).ToList();
         }
 
-        public void BroadCastDecision(Transaction message, RSAParameters publicKey)
+        public void BroadCastDecision(Message message, RSAParameters publicKey)
         {
             List<General> generalsToNotify = GetOtherGenerals(publicKey);
             BlockchainMessenger messenger = GetMessenger();
             messenger.SetMessage(message);
 
-            foreach (var general in generalsToNotify)
+            foreach (General general in generalsToNotify)
             {
                 Debug.Assert(!general.PublicKey.Equals(publicKey));
                 general.RecieveMessage(messenger);
