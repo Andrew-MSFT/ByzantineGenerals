@@ -15,6 +15,13 @@ namespace ByzantineGenerals.PowBlockchain
         public RSAParameters PublicKey { get; set; }
         public byte[] Signature { get; set; }
 
+        public bool IsBaseMessage()
+        {
+            return this.PreviousMessageHash.SequenceEqual(Block.DecisionInBaseHash) &&
+                this.PreviousMessageIdx == Block.DecisionInBaseIndex &&
+                this.Signature.SequenceEqual(Block.DecisionInSignature);
+        }
+
     }
 
     public struct MessageOut
@@ -28,7 +35,7 @@ namespace ByzantineGenerals.PowBlockchain
             this.RecipientKeyHash = HashUtilities.ComputeSHA256(recipientKey);
         }
 
-        public byte[] CalculateSHA256()
+        public byte[] ComputeSHA256()
         {
             string serialized = JsonConvert.SerializeObject(this);
             byte[] thisHash = HashUtilities.ComputeSHA256(serialized);
@@ -69,7 +76,7 @@ namespace ByzantineGenerals.PowBlockchain
                 {
                     Decision = inputMessage.Decision,
                     PreviousMessageIdx = 0,
-                    PreviousMessageHash = inputMessage.CalculateSHA256(),
+                    PreviousMessageHash = inputMessage.ComputeSHA256(),
                     PublicKey = general.PublicKey,
                     Signature = signature
                 };
@@ -84,7 +91,7 @@ namespace ByzantineGenerals.PowBlockchain
         public static bool InputMatchesOutput(MessageOut previous, MessageIn input)
         {
             //Make sure the hash of the previous matches the claimed hash in the input
-            byte[] previousHash = previous.CalculateSHA256();
+            byte[] previousHash = previous.ComputeSHA256();
             bool previousMatches = previousHash.SequenceEqual(input.PreviousMessageHash);
 
             //Make sure that the recipient's address in the previous matches the hashed public key of the input

@@ -35,15 +35,33 @@ namespace ByzantineGenerals.PowBlockchain
 
         public bool IsValidBlock(Block block)
         {
+            int totalMessageCount = 0;
+            int validatedCount = 0;
             foreach (Message message in block.Messages)
             {
-                for (int i = _blocks.Count - 1; i >= 0; i--)
+                foreach (MessageIn messageInput in message.Inputs)
                 {
-                    //_blocks[i].ContainsOutTransaction(message.Inputs.)
+                    totalMessageCount++;
+                    if (messageInput.IsBaseMessage())
+                    {
+                        validatedCount++;
+                        continue;
+                    }
+                    for (int i = _blocks.Count - 1; i >= 0; i--)
+                    {
+                        if (_blocks[i].ContainsMessageOut(messageInput.PreviousMessageHash, messageInput.PreviousMessageIdx, out MessageOut output))
+                        {
+                            if (Message.InputMatchesOutput(output, messageInput))
+                            {
+                                validatedCount++;
+                            }
+                        }
+
+                    }
                 }
             }
 
-            return true;
+            return validatedCount == totalMessageCount;
         }
 
         public bool ContainsBlock(Block block)
@@ -120,7 +138,7 @@ namespace ByzantineGenerals.PowBlockchain
                 for (int x = 0; x < inputsToValidate.Count; x++)
                 {
                     MessageIn currentInput = inputsToValidate[x];
-                    if (block.ContainsMessageOut(currentInput.PreviousMessageHash, out MessageOut previousOutput))
+                    if (block.ContainsMessageOut(currentInput.PreviousMessageHash, currentInput.PreviousMessageIdx, out MessageOut previousOutput))
                     {
                         //inputsToValidate.RemoveAt(x--);
                         //bool isValidInput = Transaction.InputMatchesOutput(previousOutput, currentInput);

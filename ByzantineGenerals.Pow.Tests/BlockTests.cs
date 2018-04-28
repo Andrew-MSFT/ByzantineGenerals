@@ -18,9 +18,48 @@ namespace ByzantineGenerals.Pow.Tests
             Message baseMessage = Message.CreateBaseDecision(Decisions.Attack, publicKey);
             Block newBlock = Block.MineNewBlock(new List<Message> { baseMessage }, blockchain.LastBlock.ComputeSHA256());
 
-            bool containsOutput = newBlock.ContainsMessageOut(newBlock.Messages[0].Outputs[0].CalculateSHA256(), out MessageOut messageOut);
+            bool containsOutput = newBlock.ContainsMessageOut(newBlock.Messages[0].Outputs[0].ComputeSHA256(), 0, out MessageOut messageOut);
             Assert.IsTrue(containsOutput);
-            Assert.IsNotNull(messageOut);
+        }
+
+        [TestMethod]
+        public void SimpleBlockValidation()
+        {
+            RSAParameters publicKey = _rSA.ExportParameters(false);
+            Blockchain blockchain = new Blockchain();
+            Message baseMessage = Message.CreateBaseDecision(Decisions.Attack, publicKey);
+            Block newBlock = Block.MineNewBlock(new List<Message> { baseMessage }, blockchain.LastBlock.ComputeSHA256());
+
+            bool isValidBlock = blockchain.IsValidBlock(newBlock);
+            Assert.IsTrue(isValidBlock);
+        }
+
+        [TestMethod]
+        public void BlockValidation()
+        {
+            General general = (General)CommandService.CreateGeneral(Decisions.Attack);
+            Blockchain blockchain = new Blockchain();
+            Message baseMessage = Message.CreateBaseDecision(Decisions.Attack, general.PublicKey);
+            Block newBlock = Block.MineNewBlock(new List<Message> { baseMessage }, blockchain.LastBlock.ComputeSHA256());
+            List<MessageOut> newOutputs = new List<MessageOut> {new MessageOut(Decisions.Attack, general.PublicKey) };
+            Message nextMessage = Message.CreateNewMessage(baseMessage.Outputs, newOutputs, general);
+            blockchain.Add(newBlock);
+            Block nextBlock = Block.MineNewBlock(new List<Message> { nextMessage}, blockchain.LastBlock.ComputeSHA256());
+
+            bool isValidBlock = blockchain.IsValidBlock(nextBlock);
+            Assert.IsTrue(isValidBlock);
+        }
+
+        [TestMethod]
+        public void NotContainsTransaction()
+        {
+            RSAParameters publicKey = _rSA.ExportParameters(false);
+            Blockchain blockchain = new Blockchain();
+            Message baseMessage = Message.CreateBaseDecision(Decisions.Attack, publicKey);
+            Block newBlock = Block.MineNewBlock(new List<Message> { baseMessage }, blockchain.LastBlock.ComputeSHA256());
+
+            bool containsOutput = newBlock.ContainsMessageOut(newBlock.Messages[0].Outputs[0].ComputeSHA256(), 1, out MessageOut messageOut);
+            Assert.IsFalse(containsOutput);
         }
 
         [TestMethod]

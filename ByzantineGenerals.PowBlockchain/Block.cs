@@ -89,19 +89,22 @@ namespace ByzantineGenerals.PowBlockchain
             }
         }
 
-        public bool ContainsMessageOut(byte[] transactionHash, out MessageOut output)
+        public bool ContainsMessageOut(byte[] transactionHash, int index, out MessageOut output)
         {
             output = new MessageOut();
 
             foreach (Message message in this.Messages)
             {
-                foreach (MessageOut messageOut in message.Outputs)
+                if (index > message.Outputs.Count - 1)
                 {
-                    if (messageOut.CalculateSHA256().SequenceEqual(transactionHash))
-                    {
-                        output = messageOut;
-                        return true;
-                    }
+                    continue;
+                }
+                MessageOut messageOut = message.Outputs[index];
+
+                if (messageOut.ComputeSHA256().SequenceEqual(transactionHash))
+                {
+                    output = messageOut;
+                    return true;
                 }
             }
 
