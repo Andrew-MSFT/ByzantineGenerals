@@ -89,7 +89,7 @@ namespace ByzantineGenerals.PowBlockchain
             }
         }
 
-        public bool ContainsOutTransaction(byte[] transactionHash, out MessageOut output)
+        public bool ContainsMessageOut(byte[] transactionHash, out MessageOut output)
         {
             output = new MessageOut();
 

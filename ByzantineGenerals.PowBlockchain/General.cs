@@ -10,9 +10,13 @@ namespace ByzantineGenerals.PowBlockchain
 {
     public interface IGeneral
     {
+        Decisions Decision { get; }
         RSAParameters PublicKey { get; }
+        Blockchain MessageChain { get; }
+
         void NotifyBlockMined(Messenger messenger);
         void RecieveMessage(Messenger messenger);
+        byte[] SignMessage(MessageOut message);
     }
 
     public class General : IGeneral
@@ -34,54 +38,33 @@ namespace ByzantineGenerals.PowBlockchain
         public void DeclareIninitialPreference()
         {
             Message initialDecision = Message.CreateBaseDecision(this.Decision, this.PublicKey);
-            CommandService.BroadCastDecision(initialDecision, this.PublicKey);
-
             List<Message> transactions = new List<Message> { initialDecision };
             byte[] previousHash = MessageChain.LastBlock.ComputeSHA256();
             _myBlock = Block.MineNewBlock(transactions, previousHash);
-            
+
             FinishedMiningBlock(_myBlock);
         }
 
         public void Coordinate()
         {
-            MessageIn input = CreateBaseInput();
             List<MessageOut> publicDecisions = new List<MessageOut>();
+            List<MessageOut> inputs = new List<MessageOut> { _myBlock.Messages[0].Outputs[0] };
 
             foreach (var general in CommandService.GetOtherGenerals(this.PublicKey))
             {
                 if (!general.PublicKey.Equals(this.PublicKey))
                 {
 
-                    MessageOut message = new MessageOut
-                    {
-                        Decision = this.Decision,
-                        RecipientKeyHash = HashUtilities.ComputeSHA256(general.PublicKey)
-                    };
+                    MessageOut message = new MessageOut(this.Decision,general.PublicKey);
                     publicDecisions.Add(message);
                 }
             }
-            List<MessageIn> inputs = new List<MessageIn> { input };
-            Message tx = new Message { Inputs = inputs, Outputs = publicDecisions };
 
-            CommandService.BroadCastDecision(tx, this.PublicKey);
+            Message broadCastMessage = Message.CreateNewMessage(inputs, publicDecisions, this);
+
+            CommandService.BroadCastDecision(broadCastMessage, this.PublicKey);
         }
 
-
-        private MessageIn CreateBaseInput()
-        {
-            MessageOut inputMessage = _myBlock.Messages[0].Outputs[0];
-            byte[] signature = SignMessage(inputMessage);
-            MessageIn messageIn = new MessageIn
-            {
-                Decision = this.Decision,
-                PreviousMessageIdx = 0,
-                PreviousMessageHash = inputMessage.CalculateSHA256(),
-                PublicKey = this.PublicKey,
-                Signature = signature
-            };
-            return messageIn;
-        }
 
         public void NotifyBlockMined(Messenger messenger)
         {
@@ -133,12 +116,11 @@ namespace ByzantineGenerals.PowBlockchain
 
         public static bool VerifySignature(RSAParameters publicKey, byte[] originalData, byte[] signedHash)
         {
-            RSACryptoServiceProvider RSA = new RSACryptoServiceProvider();
-            RSA.ImportParameters(publicKey);
-            RSAPKCS1SignatureDeformatter RSADeformatter = new RSAPKCS1SignatureDeformatter(RSA);
+            RSACryptoServiceProvider rSA = new RSACryptoServiceProvider();
+            rSA.ImportParameters(publicKey);
+            RSAPKCS1SignatureDeformatter RSADeformatter = new RSAPKCS1SignatureDeformatter(rSA);
             RSADeformatter.SetHashAlgorithm("SHA256");
-            byte[] hashedData = HashUtilities.ComputeSHA256(originalData);
-            bool signatureIsValid = RSADeformatter.VerifySignature(hashedData, signedHash);
+            bool signatureIsValid = RSADeformatter.VerifySignature(originalData, signedHash);
             return signatureIsValid;
         }
     }

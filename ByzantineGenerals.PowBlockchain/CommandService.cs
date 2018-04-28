@@ -21,22 +21,22 @@ namespace ByzantineGenerals.PowBlockchain
         }
     }
 
-    public class CommandNode
-    {
-
-    }
-
     public class CommandService
     {
         private List<IGeneral> Generals { get; set; } = new List<IGeneral>();
         private static CommandService _service = new CommandService();
-        private static Blockchain _baseBlockChain = new Blockchain();
+        public static Blockchain BaseBlockChain = new Blockchain();
 
         private CommandService() { }
 
+        public static void AddGeneral(IGeneral general)
+        {
+            _service.Generals.Add(general);
+        }
+
         public static IGeneral CreateGeneral(Decisions decision, bool isTraitor = false)
         {
-            IGeneral general = new General(decision, _baseBlockChain);
+            IGeneral general = new General(decision, BaseBlockChain);
             _service.Generals.Add(general);
 
             return general;

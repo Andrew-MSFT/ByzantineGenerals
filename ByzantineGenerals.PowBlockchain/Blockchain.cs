@@ -33,6 +33,35 @@ namespace ByzantineGenerals.PowBlockchain
             _blocks.Add(block);
         }
 
+        public bool IsValidBlock(Block block)
+        {
+            foreach (Message message in block.Messages)
+            {
+                for (int i = _blocks.Count - 1; i >= 0; i--)
+                {
+                    //_blocks[i].ContainsOutTransaction(message.Inputs.)
+                }
+            }
+
+            return true;
+        }
+
+        public bool ContainsBlock(Block block)
+        {
+            byte[] blockHash = block.ComputeSHA256();
+
+            for (int i = _blocks.Count - 1; i >= 0; i--)
+            {
+                Block currentBlock = _blocks[i];
+                byte[] currentHash = currentBlock.ComputeSHA256();
+                if (currentHash.SequenceEqual(blockHash))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         public List<Block> GetBlocks()
         {
             List<Block> chainCopy = new List<Block>();
@@ -91,7 +120,7 @@ namespace ByzantineGenerals.PowBlockchain
                 for (int x = 0; x < inputsToValidate.Count; x++)
                 {
                     MessageIn currentInput = inputsToValidate[x];
-                    if (block.ContainsOutTransaction(currentInput.PreviousMessageHash, out MessageOut previousOutput))
+                    if (block.ContainsMessageOut(currentInput.PreviousMessageHash, out MessageOut previousOutput))
                     {
                         //inputsToValidate.RemoveAt(x--);
                         //bool isValidInput = Transaction.InputMatchesOutput(previousOutput, currentInput);
