@@ -8,7 +8,14 @@ using System.Text;
 
 namespace ByzantineGenerals.PowBlockchain
 {
-    class General
+    public interface IGeneral
+    {
+        RSAParameters PublicKey { get; }
+        void NotifyBlockMined(Messenger messenger);
+        void RecieveMessage(Messenger messenger);
+    }
+
+    public class General : IGeneral
     {
         public Decisions Decision { get; private set; }
         public RSAParameters PublicKey { get; private set; }
@@ -16,20 +23,24 @@ namespace ByzantineGenerals.PowBlockchain
         private Dictionary<RSAParameters, List<Message>> _inputQueue = new Dictionary<RSAParameters, List<Message>>();
         private Block _myBlock;
         private RSACryptoServiceProvider _rSA = new RSACryptoServiceProvider();
-        private MessageService _messageService;
 
-        public General(Decisions decision, MessageService messageService, Blockchain currentChain)
+        internal General(Decisions decision, Blockchain currentChain)
         {
             this.Decision = decision;
             this.PublicKey = _rSA.ExportParameters(false);
             this.MessageChain = new Blockchain(currentChain);
-
-            _messageService = messageService;
         }
 
         public void DeclareIninitialPreference()
         {
-            CreateBaseDecision();
+            Message initialDecision = Message.CreateBaseDecision(this.Decision, this.PublicKey);
+            CommandService.BroadCastDecision(initialDecision, this.PublicKey);
+
+            List<Message> transactions = new List<Message> { initialDecision };
+            byte[] previousHash = MessageChain.LastBlock.ComputeSHA256();
+            _myBlock = Block.MineNewBlock(transactions, previousHash);
+            
+            FinishedMiningBlock(_myBlock);
         }
 
         public void Coordinate()
@@ -37,7 +48,7 @@ namespace ByzantineGenerals.PowBlockchain
             MessageIn input = CreateBaseInput();
             List<MessageOut> publicDecisions = new List<MessageOut>();
 
-            foreach (var general in _messageService.GetOtherGenerals(this.PublicKey))
+            foreach (var general in CommandService.GetOtherGenerals(this.PublicKey))
             {
                 if (!general.PublicKey.Equals(this.PublicKey))
                 {
@@ -51,34 +62,9 @@ namespace ByzantineGenerals.PowBlockchain
                 }
             }
             List<MessageIn> inputs = new List<MessageIn> { input };
-            Message tx = new Message { Input = inputs, Outputs = publicDecisions };
+            Message tx = new Message { Inputs = inputs, Outputs = publicDecisions };
 
-            _messageService.BroadCastDecision(tx, this.PublicKey);
-        }
-
-        private void CreateBaseDecision()
-        {
-            
-            MessageIn baseMessageIn = new MessageIn
-            {
-                Decision = this.Decision,
-                PreviousMessageHash = Block.DecisionInBaseHash,
-                PreviousMessageIdx = Block.DecisionInBaseIndex,
-                PublicKey = this.PublicKey,
-                Signature = Block.DecisionInSignature
-            };
-            MessageOut messageOut = new MessageOut
-            {
-                Decision = this.Decision,
-                RecipientKeyHash = HashUtilities.ComputeSHA256(this.PublicKey)
-            };
-            List<MessageIn> messageInputs = new List<MessageIn> { baseMessageIn };
-            List<MessageOut> messageOuts = new List<MessageOut> { messageOut };
-            List<Message> transactions = new List<Message> { new Message { Input = messageInputs, Outputs = messageOuts } };
-            byte[] previousHash = MessageChain.LastBlock.ComputeSHA256();
-            Block block = Block.MineNewBlock(transactions, previousHash);
-            _myBlock = block;
-            FinishedMiningBlock(block);
+            CommandService.BroadCastDecision(tx, this.PublicKey);
         }
 
 
@@ -97,20 +83,20 @@ namespace ByzantineGenerals.PowBlockchain
             return messageIn;
         }
 
-        public void NotifyBlockMined(BlockchainMessenger messenger)
+        public void NotifyBlockMined(Messenger messenger)
         {
             Block block = messenger.MinedBlock;
             this.MessageChain?.Add(block);
         }
 
-        public void RecieveMessage(BlockchainMessenger messenger)
+        public void RecieveMessage(Messenger messenger)
         {
             Message message = messenger.Message;
             //_inputQueue.Add(message.Input.PublicKey, message);
-            if (_inputQueue.Count == _messageService.GetOtherGenerals(this.PublicKey).Count)
-            {
-                //MineBlock();
-            }
+            //if (_inputQueue.Count == _messageService.GetOtherGenerals(this.PublicKey).Count)
+            //{
+            //    //MineBlock();
+            //}
         }
 
         private void MineBlock(List<Message> transactions)
@@ -124,7 +110,7 @@ namespace ByzantineGenerals.PowBlockchain
         private void FinishedMiningBlock(Block block)
         {
             this.MessageChain.Add(block);
-            _messageService.NotifyNewBlockMined(block, this.PublicKey);
+            CommandService.NotifyNewBlockMined(block, this.PublicKey);
         }
 
 

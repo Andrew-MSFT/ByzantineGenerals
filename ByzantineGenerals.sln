@@ -3,11 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.27420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ByzantineGenerals", "ByzantineGenerals\ByzantineGenerals.csproj", "{4979D329-449D-4B34-8813-A78D7ADC8989}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ByzantineGenerals", "ByzantineGenerals\ByzantineGenerals.csproj", "{4979D329-449D-4B34-8813-A78D7ADC8989}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ByzantineGenerals.Lib", "ByzantineGenerals.Lib\ByzantineGenerals.Lib.csproj", "{552263AC-4E12-4526-B500-D4C33F7B2FCE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ByzantineGenerals.Lib", "ByzantineGenerals.Lib\ByzantineGenerals.Lib.csproj", "{552263AC-4E12-4526-B500-D4C33F7B2FCE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ByzantineGenerals.PowBlockchain", "ByzantineGenerals.PowBlockchain\ByzantineGenerals.PowBlockchain.csproj", "{839CE1FE-8437-4EBA-BA14-A76BC6361B91}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ByzantineGenerals.PowBlockchain", "ByzantineGenerals.PowBlockchain\ByzantineGenerals.PowBlockchain.csproj", "{839CE1FE-8437-4EBA-BA14-A76BC6361B91}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ByzantineGenerals.Pow.Tests", "ByzantineGenerals.Pow.Tests\ByzantineGenerals.Pow.Tests.csproj", "{0BE0B86C-76A1-4110-9C3E-F57408D47A38}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -27,6 +29,10 @@ Global
 		{839CE1FE-8437-4EBA-BA14-A76BC6361B91}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{839CE1FE-8437-4EBA-BA14-A76BC6361B91}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{839CE1FE-8437-4EBA-BA14-A76BC6361B91}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0BE0B86C-76A1-4110-9C3E-F57408D47A38}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0BE0B86C-76A1-4110-9C3E-F57408D47A38}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0BE0B86C-76A1-4110-9C3E-F57408D47A38}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0BE0B86C-76A1-4110-9C3E-F57408D47A38}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

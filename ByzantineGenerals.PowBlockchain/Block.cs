@@ -9,37 +9,6 @@ using System.Security.Cryptography;
 
 namespace ByzantineGenerals.PowBlockchain
 {
-    public enum Decisions { NoneRecieved, Attack, Retreat }
-
-    public struct MessageIn
-    {
-        public byte[] PreviousMessageHash { get; set; }
-        public int PreviousMessageIdx { get; set; }
-        public Decisions Decision { get; set; }
-        public RSAParameters PublicKey { get; set; }
-        public byte[] Signature { get; set; }
-
-    }
-
-    public struct MessageOut
-    {
-        public Decisions Decision { get; set; }
-        public byte[] RecipientKeyHash { get; set; }
-
-        public byte[] CalculateSHA256()
-        {
-            string serialized = JsonConvert.SerializeObject(this);
-            byte[] thisHash = HashUtilities.ComputeSHA256(serialized);
-            return thisHash;
-        }
-    }
-
-    public struct Message
-    {
-        public List<MessageIn> Input { get; set; }
-        public List<MessageOut> Outputs { get; set; }
-    }
-
     public class Block
     {
         public static readonly byte[] DecisionInBaseHash = Enumerable.Repeat<byte>(0, 32).ToArray();
@@ -124,13 +93,13 @@ namespace ByzantineGenerals.PowBlockchain
         {
             output = new MessageOut();
 
-            foreach (Message tx in this.Messages)
+            foreach (Message message in this.Messages)
             {
-                foreach (MessageOut txOut in tx.Outputs)
+                foreach (MessageOut messageOut in message.Outputs)
                 {
-                    if (txOut.CalculateSHA256().SequenceEqual(transactionHash))
+                    if (messageOut.CalculateSHA256().SequenceEqual(transactionHash))
                     {
-                        output = txOut;
+                        output = messageOut;
                         return true;
                     }
                 }

@@ -7,20 +7,18 @@ namespace ByzantineGenerals.PowBlockchain
     {
         static void Main(string[] args)
         {
-            MessageService messageService = new MessageService();
+            CommandService.CreateGeneral(Decisions.Attack);
+            CommandService.CreateGeneral(Decisions.Attack);
+            CommandService.CreateGeneral(Decisions.Attack);
+            CommandService.CreateGeneral(Decisions.Retreat);
+            CommandService.CreateGeneral(Decisions.Retreat);
 
-            messageService.Generals = new List<General>
+            foreach (General general in CommandService.GetGenerals())
             {
-                new General(Decisions.Attack, messageService),
-                new General(Decisions.Attack, messageService),
-                new General(Decisions.Attack, messageService),
-                new General(Decisions.Retreat, messageService),
-                new General(Decisions.Retreat, messageService)
-            };
+                general.DeclareIninitialPreference();
+            }
 
-            
-            
-            foreach (General general in messageService.Generals)
+            foreach (General general in CommandService.GetGenerals())
             {
                 general.Coordinate();
             }

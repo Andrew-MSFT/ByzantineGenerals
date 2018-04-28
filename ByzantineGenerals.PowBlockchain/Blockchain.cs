@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace ByzantineGenerals.PowBlockchain
 {
-    class Blockchain
+    public class Blockchain
     {
         public static readonly byte[] GenesisBlockHash = HashUtilities.ComputeSHA256("Byzantine generals blockchain example");
 
@@ -79,6 +79,33 @@ namespace ByzantineGenerals.PowBlockchain
             }
 
             return true;
+        }
+
+        public bool IsValidTransaction(Message tx)
+        {
+            List<MessageIn> inputsToValidate = new List<MessageIn>(tx.Inputs);
+
+            for (int i = _blocks.Count - 1; i > 0; i--)
+            {
+                var block = _blocks[i];
+                for (int x = 0; x < inputsToValidate.Count; x++)
+                {
+                    MessageIn currentInput = inputsToValidate[x];
+                    if (block.ContainsOutTransaction(currentInput.PreviousMessageHash, out MessageOut previousOutput))
+                    {
+                        //inputsToValidate.RemoveAt(x--);
+                        //bool isValidInput = Transaction.InputMatchesOutput(previousOutput, currentInput);
+
+                        //if (!isValidInput)
+                        //{
+                        //    return false;
+                        //}
+                    }
+                }
+
+            }
+
+            return inputsToValidate.Count == 0;
         }
 
         public Block LastBlock
