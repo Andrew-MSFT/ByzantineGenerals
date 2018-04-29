@@ -24,20 +24,19 @@ namespace ByzantineGenerals.PowBlockchain
     public class CommandService
     {
         private List<General> Generals { get; set; } = new List<General>();
-        private static CommandService _service = new CommandService();
-        public static Blockchain BaseBlockChain = new Blockchain();
+        public static readonly Blockchain BaseBlockChain = new Blockchain();
 
-        private CommandService() { }
+        public CommandService() { }
 
-        public static void AddGeneral(General general)
+        public void AddGeneral(General general)
         {
-            _service.Generals.Add(general);
+            this.Generals.Add(general);
         }
 
-        public static General CreateGeneral(Decisions decision, bool isTraitor = false)
+        public General CreateGeneral(Decisions decision, bool isTraitor = false)
         {
-            General general = new General(decision, BaseBlockChain);
-            _service.Generals.Add(general);
+            General general = new General(decision, this, BaseBlockChain);
+            this.Generals.Add(general);
 
             return general;
         }
@@ -47,20 +46,20 @@ namespace ByzantineGenerals.PowBlockchain
             return new Messenger();
         }
 
-        public static List<General> GetGenerals()
+        public List<General> GetAllGenerals()
         {
-            return _service.Generals;
+            return this.Generals;
         }
 
-        public static List<General> GetOtherGenerals(RSAParameters publicKey) 
+        public List<General> GetOtherGenerals(RSAParameters publicKey) 
         {
-            return _service.Generals.Where(general => !general.PublicKey.Equals(publicKey)).ToList();
+            return this.Generals.Where(general => !general.PublicKey.Equals(publicKey)).ToList();
         }
 
-        public static void BroadCastDecision(Message message, RSAParameters publicKey)
+        public void BroadCastDecision(Message message, RSAParameters publicKey)
         {
-            List<General> generalsToNotify = CommandService.GetOtherGenerals(publicKey);
-            Messenger messenger = _service.GetMessenger();
+            List<General> generalsToNotify = GetOtherGenerals(publicKey);
+            Messenger messenger = this.GetMessenger();
             messenger.SetMessage(message);
 
             foreach (General general in generalsToNotify)
@@ -70,14 +69,14 @@ namespace ByzantineGenerals.PowBlockchain
             }
         }
 
-        public static void NotifyNewBlockMined(Block block, RSAParameters publicKey)
+        public void NotifyNewBlockMined(Block block, RSAParameters publicKey)
         {
             List<General> generalsToNotify = GetOtherGenerals(publicKey);
 
             foreach (General general in generalsToNotify)
             {
                 Debug.Assert(!general.PublicKey.Equals(publicKey));
-                Messenger messenger = _service.GetMessenger();
+                Messenger messenger = this.GetMessenger();
                 messenger.SetBlock(block);
                 general.NotifyBlockMined(messenger);
             }

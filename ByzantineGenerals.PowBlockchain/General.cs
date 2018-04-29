@@ -20,15 +20,18 @@ namespace ByzantineGenerals.PowBlockchain
         internal List<Message> RecievedMessagePool { get; private set; } = new List<Message>();
         internal List<Block> RecievedBlockPool { get; private set; } = new List<Block>();
 
-        private Dictionary<RSAParameters, List<Message>> _inputQueue = new Dictionary<RSAParameters, List<Message>>();
+        private readonly Dictionary<RSAParameters, List<Message>> _inputQueue = new Dictionary<RSAParameters, List<Message>>();
         private Block _myBlock;
         private RSACryptoServiceProvider _rSA = new RSACryptoServiceProvider();
+        private CommandService _commandService;
 
-        internal General(Decisions decision, Blockchain currentChain)
+        internal General(Decisions decision, CommandService commandService, Blockchain currentChain)
         {
             this.Decision = decision;
             this.PublicKey = _rSA.ExportParameters(false);
             this.MessageChain = new Blockchain(currentChain);
+
+            _commandService = commandService;
         }
 
         public void DeclareIninitialPreference()
@@ -46,7 +49,7 @@ namespace ByzantineGenerals.PowBlockchain
             List<MessageOut> publicDecisions = new List<MessageOut>();
             List<MessageOut> inputs = new List<MessageOut> { _myBlock.Messages[0].Outputs[0] };
 
-            foreach (var general in CommandService.GetOtherGenerals(this.PublicKey))
+            foreach (var general in _commandService.GetOtherGenerals(this.PublicKey))
             {
                 if (!general.PublicKey.Equals(this.PublicKey))
                 {
@@ -58,7 +61,7 @@ namespace ByzantineGenerals.PowBlockchain
 
             Message broadCastMessage = Message.CreateNewMessage(inputs, publicDecisions, this);
 
-            CommandService.BroadCastDecision(broadCastMessage, this.PublicKey);
+            _commandService.BroadCastDecision(broadCastMessage, this.PublicKey);
         }
 
 
@@ -91,7 +94,7 @@ namespace ByzantineGenerals.PowBlockchain
         private void FinishedMiningBlock(Block block)
         {
             this.MessageChain.Add(block);
-            CommandService.NotifyNewBlockMined(block, this.PublicKey);
+            _commandService.NotifyNewBlockMined(block, this.PublicKey);
         }
 
 
@@ -120,6 +123,12 @@ namespace ByzantineGenerals.PowBlockchain
             RSADeformatter.SetHashAlgorithm("SHA256");
             bool signatureIsValid = RSADeformatter.VerifySignature(originalData, signedHash);
             return signatureIsValid;
+        }
+
+        public static (RSAParameters FullKey, RSAParameters PublicKey) GenerateRSAKey()
+        {
+            RSACryptoServiceProvider rSA = new RSACryptoServiceProvider();
+            return (rSA.ExportParameters(true), rSA.ExportParameters(false));
         }
     }
 }

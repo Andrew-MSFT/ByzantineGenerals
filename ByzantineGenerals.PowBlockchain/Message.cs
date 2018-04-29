@@ -26,8 +26,8 @@ namespace ByzantineGenerals.PowBlockchain
 
     public struct MessageOut
     {
-        public Decisions Decision { get; private set; }
-        public byte[] RecipientKeyHash { get; private set; }
+        public Decisions Decision { get; set; }
+        public byte[] RecipientKeyHash { get; set; }
 
         public MessageOut(Decisions decision, RSAParameters recipientKey)
         {

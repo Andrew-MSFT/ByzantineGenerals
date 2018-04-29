@@ -37,7 +37,8 @@ namespace ByzantineGenerals.Pow.Tests
         [TestMethod]
         public void BlockValidation()
         {
-            General general = (General)CommandService.CreateGeneral(Decisions.Attack);
+            CommandService commandService = new CommandService();
+            General general = (General)commandService.CreateGeneral(Decisions.Attack);
             Blockchain blockchain = new Blockchain();
             Message baseMessage = Message.CreateBaseDecision(Decisions.Attack, general.PublicKey);
             Block newBlock = Block.MineNewBlock(new List<Message> { baseMessage }, blockchain.LastBlock.ComputeSHA256());
@@ -65,9 +66,9 @@ namespace ByzantineGenerals.Pow.Tests
         [TestMethod]
         public void ValidateSenderBlockChain()
         {
-            General general = (General)CommandService.CreateGeneral(Decisions.Attack);
-            General testGeneral = (General)CommandService.CreateGeneral(Decisions.Attack);
-            CommandService.AddGeneral(testGeneral);
+            CommandService commandService = new CommandService();
+            General general = commandService.CreateGeneral(Decisions.Attack);
+            General testGeneral = commandService.CreateGeneral(Decisions.Attack);
 
             general.DeclareIninitialPreference();
             Block recievedBlock = testGeneral.RecievedBlockPool[0];
