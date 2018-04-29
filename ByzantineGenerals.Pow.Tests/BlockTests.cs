@@ -63,53 +63,18 @@ namespace ByzantineGenerals.Pow.Tests
         }
 
         [TestMethod]
-        public void ValidateMessage()
+        public void ValidateSenderBlockChain()
         {
             General general = (General)CommandService.CreateGeneral(Decisions.Attack);
-            TestGeneral testGeneral = new TestGeneral(Decisions.Attack);
+            General testGeneral = (General)CommandService.CreateGeneral(Decisions.Attack);
             CommandService.AddGeneral(testGeneral);
 
             general.DeclareIninitialPreference();
-            Block recievedBlock = testGeneral.ReceivedBlocks[0];
+            Block recievedBlock = testGeneral.RecievedBlockPool[0];
             bool blockInChain = general.MessageChain.ContainsBlock(recievedBlock);
             
             Assert.IsTrue(blockInChain);
         }
     }
 
-    class TestGeneral : IGeneral
-    {
-        private RSACryptoServiceProvider _rSA = new RSACryptoServiceProvider();
-
-        public RSAParameters PublicKey { get; private set; }
-
-        public Decisions Decision { get; private set; }
-
-        public Blockchain MessageChain { get; private set; }
-
-        public List<Message> RecievedMessages { get; private set; } = new List<Message>();
-        public List<Block> ReceivedBlocks { get; private set; } = new List<Block>();
-
-        public TestGeneral(Decisions decision)
-        {
-            this.Decision = decision;
-            this.PublicKey = _rSA.ExportParameters(false);
-            this.MessageChain = new Blockchain(CommandService.BaseBlockChain);
-        }
-
-        public void NotifyBlockMined(Messenger messenger)
-        {
-            this.ReceivedBlocks.Add(messenger.MinedBlock);
-        }
-
-        public void RecieveMessage(Messenger messenger)
-        {
-            this.RecievedMessages.Add(messenger.Message);
-        }
-
-        public byte[] SignMessage(MessageOut message)
-        {
-            throw new System.NotImplementedException();
-        }
-    }
 }

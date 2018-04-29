@@ -10,12 +10,17 @@ namespace ByzantineGenerals.Pow.Tests
     [TestClass]
     public class MessageTests
     {
+        [TestMethod]
+        public void MessageTest2()
+        {
+
+        }
 
         [TestMethod]
         public void MessageInputsMatch()
         {
             const Decisions workingDecision = Decisions.Attack;
-            IGeneral general = CommandService.CreateGeneral(workingDecision);
+            General general = CommandService.CreateGeneral(workingDecision);
             Message baseMessage = Message.CreateBaseDecision(workingDecision, general.PublicKey);
             MessageOut messageOut = new MessageOut(workingDecision, general.PublicKey);
             Message newMessage = Message.CreateNewMessage(baseMessage.Outputs, new List<MessageOut> { messageOut }, general);

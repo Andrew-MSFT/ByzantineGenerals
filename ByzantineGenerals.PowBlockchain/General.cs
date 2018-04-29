@@ -5,25 +5,21 @@ using System.Diagnostics;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using System.Runtime.CompilerServices;
+
+[assembly:InternalsVisibleTo("ByzantineGenerals.Pow.Tests")]
+
 
 namespace ByzantineGenerals.PowBlockchain
 {
-    public interface IGeneral
-    {
-        Decisions Decision { get; }
-        RSAParameters PublicKey { get; }
-        Blockchain MessageChain { get; }
-
-        void NotifyBlockMined(Messenger messenger);
-        void RecieveMessage(Messenger messenger);
-        byte[] SignMessage(MessageOut message);
-    }
-
-    public class General : IGeneral
+    public class General
     {
         public Decisions Decision { get; private set; }
         public RSAParameters PublicKey { get; private set; }
         public Blockchain MessageChain { get; private set; }
+        internal List<Message> RecievedMessagePool { get; private set; } = new List<Message>();
+        internal List<Block> RecievedBlockPool { get; private set; } = new List<Block>();
+
         private Dictionary<RSAParameters, List<Message>> _inputQueue = new Dictionary<RSAParameters, List<Message>>();
         private Block _myBlock;
         private RSACryptoServiceProvider _rSA = new RSACryptoServiceProvider();
@@ -69,12 +65,14 @@ namespace ByzantineGenerals.PowBlockchain
         public void NotifyBlockMined(Messenger messenger)
         {
             Block block = messenger.MinedBlock;
+            this.RecievedBlockPool.Add(block);
             this.MessageChain?.Add(block);
         }
 
         public void RecieveMessage(Messenger messenger)
         {
             Message message = messenger.Message;
+            this.RecievedMessagePool.Add(message);
             //_inputQueue.Add(message.Input.PublicKey, message);
             //if (_inputQueue.Count == _messageService.GetOtherGenerals(this.PublicKey).Count)
             //{

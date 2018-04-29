@@ -66,7 +66,7 @@ namespace ByzantineGenerals.PowBlockchain
             return decisionMessage;
         }
 
-        public static Message CreateNewMessage(List<MessageOut> inputs, List<MessageOut> outputs, IGeneral general)
+        public static Message CreateNewMessage(List<MessageOut> inputs, List<MessageOut> outputs, General general)
         {
             List<MessageIn> messageInputs = new List<MessageIn>();
             foreach (MessageOut inputMessage in inputs)
