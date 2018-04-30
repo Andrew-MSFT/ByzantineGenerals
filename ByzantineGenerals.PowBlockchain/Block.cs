@@ -32,7 +32,7 @@ namespace ByzantineGenerals.PowBlockchain
             this.Messages = transactions;
             this.PreviousHash = previousHash;
             this.TimeStamp = DateTime.Now;
-            this.HashMessages = ComputeMessagesSHA256();
+            this.HashMessages = Block.ComputeMessagesSHA256(this);
         }
 
         private Block(Block block)
@@ -63,10 +63,11 @@ namespace ByzantineGenerals.PowBlockchain
             return newBlock;
         }
 
-        private byte[] ComputeMessagesSHA256()
+        public static byte[] ComputeMessagesSHA256(Block block)
         {
-            string serialized = JsonConvert.SerializeObject(this.Messages);
-            return HashUtilities.ComputeSHA256(serialized);
+            string serialized = JsonConvert.SerializeObject(block.Messages);
+            byte[] hash = HashUtilities.ComputeSHA256(serialized);
+            return hash;
         }
 
         private void CalculateNonce()

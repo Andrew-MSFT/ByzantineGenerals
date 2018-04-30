@@ -7,7 +7,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Runtime.CompilerServices;
 
-[assembly:InternalsVisibleTo("ByzantineGenerals.Pow.Tests")]
+[assembly: InternalsVisibleTo("ByzantineGenerals.Pow.Tests")]
 
 
 namespace ByzantineGenerals.PowBlockchain
@@ -18,7 +18,9 @@ namespace ByzantineGenerals.PowBlockchain
         public RSAParameters PublicKey { get; private set; }
         public Blockchain MessageChain { get; private set; }
         internal List<Message> RecievedMessagePool { get; private set; } = new List<Message>();
+        internal List<Message> OrphanedMessagePool { get; private set; } = new List<Message>();
         internal List<Block> RecievedBlockPool { get; private set; } = new List<Block>();
+        internal List<Block> OrphanedBlockPool { get; private set; } = new List<Block>();
 
         private readonly Dictionary<RSAParameters, List<Message>> _inputQueue = new Dictionary<RSAParameters, List<Message>>();
         private Block _myBlock;
@@ -54,7 +56,7 @@ namespace ByzantineGenerals.PowBlockchain
                 if (!general.PublicKey.Equals(this.PublicKey))
                 {
 
-                    MessageOut message = new MessageOut(this.Decision,general.PublicKey);
+                    MessageOut message = new MessageOut(this.Decision, general.PublicKey);
                     publicDecisions.Add(message);
                 }
             }
@@ -68,14 +70,28 @@ namespace ByzantineGenerals.PowBlockchain
         public void NotifyBlockMined(Messenger messenger)
         {
             Block block = messenger.MinedBlock;
-            this.RecievedBlockPool.Add(block);
-            this.MessageChain.Add(block);
+            if (this.MessageChain.IsValidBlock(block))
+            {
+                this.RecievedBlockPool.Add(block);
+                this.MessageChain.Add(block);
+            }
+            else
+            {
+                this.OrphanedBlockPool.Add(block);
+            }
         }
 
         public void RecieveMessage(Messenger messenger)
         {
             Message message = messenger.Message;
-            this.RecievedMessagePool.Add(message);
+            if (this.MessageChain.IsValidMessage(message))
+            {
+                this.RecievedMessagePool.Add(message);
+            }
+            else
+            {
+                this.OrphanedMessagePool.Add(message);
+            }
         }
 
         private void FinishedMiningBlock(Block block)

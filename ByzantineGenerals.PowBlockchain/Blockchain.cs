@@ -35,6 +35,16 @@ namespace ByzantineGenerals.PowBlockchain
 
         public bool IsValidBlock(Block block)
         {
+            bool messagesAreValid = MessagesAreValid(block);
+            bool poWIsValid = block.ProofOfWorkIsValid(block);
+            bool prevoiusHashMatches = block.PreviousHash.SequenceEqual(this.LastBlock.ComputeSHA256());
+            bool messageHashMatches = block.HashMessages.SequenceEqual(Block.ComputeMessagesSHA256(block));
+
+            return messagesAreValid && poWIsValid && prevoiusHashMatches && messageHashMatches;
+        }
+
+        private bool MessagesAreValid(Block block)
+        {
             int totalMessageCount = 0;
             int validatedCount = 0;
             foreach (Message message in block.Messages)
