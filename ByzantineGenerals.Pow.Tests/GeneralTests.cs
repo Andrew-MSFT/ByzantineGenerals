@@ -72,6 +72,37 @@ namespace ByzantineGenerals.Pow.Tests
         }
 
         [TestMethod]
+        public void SendInvalidBlock()
+        {
+            const Decisions workingDecision = Decisions.Attack;
+            CommandService commandService = new CommandService();
+            General general1 = commandService.CreateGeneral(workingDecision);
+            General general2 = commandService.CreateGeneral(workingDecision);
+
+            general1.DeclareIninitialPreference();
+            Block newBlock = general2.RecievedBlockPool[0];
+            Message message = newBlock.Messages[0];
+
+            byte[] general1TargetHash = HashUtilities.ComputeSHA256(general1.PublicKey);
+            byte[] general2TargetHash = HashUtilities.ComputeSHA256(general2.PublicKey);
+
+            MessageOut input = message.Outputs[0];
+            MessageOut output = new MessageOut
+            {
+                Decision = input.Decision,
+                RecipientKeyHash = general2TargetHash
+            };
+
+            Message fakeMessage = Message.CreateNewMessage(new List<MessageOut> { input }, new List<MessageOut> { output }, general1);
+            bool isValid = general2.MessageChain.IsValidMessage(fakeMessage);
+            commandService.BroadCastDecision(fakeMessage, general1.PublicKey);
+
+            Assert.IsTrue(isValid);
+            Assert.AreEqual(0, general2.OrphanedMessagePool.Count);
+            Assert.AreEqual(1, general2.RecievedMessagePool.Count);
+        }
+
+        [TestMethod]
         public void ValidMessage()
         {
             const Decisions workingDecision = Decisions.Attack;

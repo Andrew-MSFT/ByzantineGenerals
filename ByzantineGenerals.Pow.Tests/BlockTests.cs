@@ -64,6 +64,25 @@ namespace ByzantineGenerals.Pow.Tests
         }
 
         [TestMethod]
+        public void InvalidBlock()
+        {
+            CommandService commandService = new CommandService();
+            Blockchain blockchain = new Blockchain();
+            General general = commandService.CreateGeneral(Decisions.Attack);
+
+            Message baseMessage = Message.CreateBaseDecision(Decisions.Attack, general.PublicKey);
+            Block newBlock = Block.MineNewBlock(new List<Message> { baseMessage }, blockchain.LastBlock.ComputeSHA256());
+            blockchain.Add(newBlock);
+
+            List<MessageOut> newOutputs = new List<MessageOut> {new MessageOut(Decisions.Retreat, general.PublicKey) };
+            Message nextMessage = Message.CreateNewMessage(baseMessage.Outputs, newOutputs, general);
+            Block nextBlock = Block.MineNewBlock(new List<Message> { nextMessage}, blockchain.LastBlock.ComputeSHA256());
+
+            bool isValidBlock = blockchain.IsValidBlock(nextBlock);
+            Assert.IsFalse(isValidBlock);
+        }
+
+        [TestMethod]
         public void ValidateSenderBlockChain()
         {
             CommandService commandService = new CommandService();

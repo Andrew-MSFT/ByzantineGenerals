@@ -5,7 +5,7 @@ using System.Security.Cryptography;
 
 namespace ByzantineGenerals.PowBlockchain
 {
-    public enum Decisions { NoneRecieved, Attack, Retreat }
+    public enum Decisions { Attack, Retreat }
 
     public struct MessageIn
     {

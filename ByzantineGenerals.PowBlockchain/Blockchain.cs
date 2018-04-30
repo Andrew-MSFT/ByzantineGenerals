@@ -62,13 +62,16 @@ namespace ByzantineGenerals.PowBlockchain
         public bool IsValidMessage(Message message)
         {
             int messageCount = 0;
-            int validatedCount = 0;
+            int validatedInputs = 0;
+            int attackCount = 0;
+            int retreatCount = 0;
+
             foreach (MessageIn messageInput in message.Inputs)
             {
                 messageCount++;
                 if (messageInput.IsBaseMessage())
                 {
-                    validatedCount++;
+                    validatedInputs++;
                     continue;
                 }
                 for (int i = _blocks.Count - 1; i >= 0; i--)
@@ -77,14 +80,33 @@ namespace ByzantineGenerals.PowBlockchain
                     {
                         if (Message.InputMatchesOutput(output, messageInput))
                         {
-                            validatedCount++;
+                            if (messageInput.Decision == Decisions.Attack)
+                            {
+                                attackCount++;
+                            }
+                            else if(messageInput.Decision == Decisions.Retreat)
+                            {
+                                retreatCount++;
+                            }
+                            validatedInputs++;
                         }
                     }
 
                 }
             }
 
-            return validatedCount == messageCount;
+            bool outputDecisionsMatchInputs = true;
+            foreach (MessageOut messageOut in message.Outputs)
+            {
+                if ((attackCount > retreatCount && messageOut.Decision == Decisions.Retreat) 
+                    || (retreatCount > attackCount && messageOut.Decision == Decisions.Attack))
+                {
+                    outputDecisionsMatchInputs = false;
+                    break;
+                }
+            }
+
+            return validatedInputs == messageCount && outputDecisionsMatchInputs;
         }
 
         public bool ContainsBlock(Block block)
