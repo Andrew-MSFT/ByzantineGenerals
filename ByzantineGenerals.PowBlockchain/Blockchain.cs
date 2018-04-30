@@ -39,29 +39,42 @@ namespace ByzantineGenerals.PowBlockchain
             int validatedCount = 0;
             foreach (Message message in block.Messages)
             {
-                foreach (MessageIn messageInput in message.Inputs)
+                totalMessageCount++;
+                if (IsValidMessage(message))
                 {
-                    totalMessageCount++;
-                    if (messageInput.IsBaseMessage())
-                    {
-                        validatedCount++;
-                        continue;
-                    }
-                    for (int i = _blocks.Count - 1; i >= 0; i--)
-                    {
-                        if (_blocks[i].ContainsMessageOut(messageInput.PreviousMessageHash, messageInput.PreviousMessageIdx, out MessageOut output))
-                        {
-                            if (Message.InputMatchesOutput(output, messageInput))
-                            {
-                                validatedCount++;
-                            }
-                        }
-
-                    }
+                    validatedCount++;
                 }
             }
 
             return validatedCount == totalMessageCount;
+        }
+
+        public bool IsValidMessage(Message message)
+        {
+            int messageCount = 0;
+            int validatedCount = 0;
+            foreach (MessageIn messageInput in message.Inputs)
+            {
+                messageCount++;
+                if (messageInput.IsBaseMessage())
+                {
+                    validatedCount++;
+                    continue;
+                }
+                for (int i = _blocks.Count - 1; i >= 0; i--)
+                {
+                    if (_blocks[i].ContainsMessageOut(messageInput.PreviousMessageHash, messageInput.PreviousMessageIdx, out MessageOut output))
+                    {
+                        if (Message.InputMatchesOutput(output, messageInput))
+                        {
+                            validatedCount++;
+                        }
+                    }
+
+                }
+            }
+
+            return validatedCount == messageCount;
         }
 
         public bool ContainsBlock(Block block)
@@ -126,33 +139,6 @@ namespace ByzantineGenerals.PowBlockchain
             }
 
             return true;
-        }
-
-        public bool IsValidTransaction(Message tx)
-        {
-            List<MessageIn> inputsToValidate = new List<MessageIn>(tx.Inputs);
-
-            for (int i = _blocks.Count - 1; i > 0; i--)
-            {
-                var block = _blocks[i];
-                for (int x = 0; x < inputsToValidate.Count; x++)
-                {
-                    MessageIn currentInput = inputsToValidate[x];
-                    if (block.ContainsMessageOut(currentInput.PreviousMessageHash, currentInput.PreviousMessageIdx, out MessageOut previousOutput))
-                    {
-                        //inputsToValidate.RemoveAt(x--);
-                        //bool isValidInput = Transaction.InputMatchesOutput(previousOutput, currentInput);
-
-                        //if (!isValidInput)
-                        //{
-                        //    return false;
-                        //}
-                    }
-                }
-
-            }
-
-            return inputsToValidate.Count == 0;
         }
 
         public Block LastBlock

@@ -69,26 +69,13 @@ namespace ByzantineGenerals.PowBlockchain
         {
             Block block = messenger.MinedBlock;
             this.RecievedBlockPool.Add(block);
-            this.MessageChain?.Add(block);
+            this.MessageChain.Add(block);
         }
 
         public void RecieveMessage(Messenger messenger)
         {
             Message message = messenger.Message;
             this.RecievedMessagePool.Add(message);
-            //_inputQueue.Add(message.Input.PublicKey, message);
-            //if (_inputQueue.Count == _messageService.GetOtherGenerals(this.PublicKey).Count)
-            //{
-            //    //MineBlock();
-            //}
-        }
-
-        private void MineBlock(List<Message> transactions)
-        {
-            byte[] previousHash = MessageChain.LastBlock.ComputeSHA256();
-            Block block = Block.MineNewBlock(transactions, previousHash);
-
-            FinishedMiningBlock(block);
         }
 
         private void FinishedMiningBlock(Block block)

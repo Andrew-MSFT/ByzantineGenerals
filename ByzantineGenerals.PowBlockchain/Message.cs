@@ -66,18 +66,18 @@ namespace ByzantineGenerals.PowBlockchain
             return decisionMessage;
         }
 
-        public static Message CreateNewMessage(List<MessageOut> inputs, List<MessageOut> outputs, General general)
+        public static Message CreateNewMessage(List<MessageOut> inputs, List<MessageOut> outputs, General sender)
         {
             List<MessageIn> messageInputs = new List<MessageIn>();
             foreach (MessageOut inputMessage in inputs)
             {
-                byte[] signature = general.SignMessage(inputMessage);
+                byte[] signature = sender.SignMessage(inputMessage);
                 MessageIn messageIn = new MessageIn
                 {
                     Decision = inputMessage.Decision,
                     PreviousMessageIdx = 0,
                     PreviousMessageHash = inputMessage.ComputeSHA256(),
-                    PublicKey = general.PublicKey,
+                    PublicKey = sender.PublicKey,
                     Signature = signature
                 };
 

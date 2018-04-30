@@ -23,6 +23,18 @@ namespace ByzantineGenerals.Pow.Tests
         }
 
         [TestMethod]
+        public void NotContainsTransaction()
+        {
+            RSAParameters publicKey = _rSA.ExportParameters(false);
+            Blockchain blockchain = new Blockchain();
+            Message baseMessage = Message.CreateBaseDecision(Decisions.Attack, publicKey);
+            Block newBlock = Block.MineNewBlock(new List<Message> { baseMessage }, blockchain.LastBlock.ComputeSHA256());
+
+            bool containsOutput = newBlock.ContainsMessageOut(newBlock.Messages[0].Outputs[0].ComputeSHA256(), 1, out MessageOut messageOut);
+            Assert.IsFalse(containsOutput);
+        }
+
+        [TestMethod]
         public void SimpleBlockValidation()
         {
             RSAParameters publicKey = _rSA.ExportParameters(false);
@@ -49,18 +61,6 @@ namespace ByzantineGenerals.Pow.Tests
 
             bool isValidBlock = blockchain.IsValidBlock(nextBlock);
             Assert.IsTrue(isValidBlock);
-        }
-
-        [TestMethod]
-        public void NotContainsTransaction()
-        {
-            RSAParameters publicKey = _rSA.ExportParameters(false);
-            Blockchain blockchain = new Blockchain();
-            Message baseMessage = Message.CreateBaseDecision(Decisions.Attack, publicKey);
-            Block newBlock = Block.MineNewBlock(new List<Message> { baseMessage }, blockchain.LastBlock.ComputeSHA256());
-
-            bool containsOutput = newBlock.ContainsMessageOut(newBlock.Messages[0].Outputs[0].ComputeSHA256(), 1, out MessageOut messageOut);
-            Assert.IsFalse(containsOutput);
         }
 
         [TestMethod]

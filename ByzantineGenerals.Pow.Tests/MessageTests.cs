@@ -39,5 +39,54 @@ namespace ByzantineGenerals.Pow.Tests
 
             Assert.IsTrue(match);
         }
+
+        [TestMethod]
+        public void ValidBaseInputMessage()
+        {
+            const Decisions workingDecision = Decisions.Attack;
+            CommandService commandService = new CommandService();
+            General general1 = commandService.CreateGeneral(workingDecision);
+            General general2 = commandService.CreateGeneral(workingDecision);
+
+            general1.DeclareIninitialPreference();
+            Block newBlock = general2.RecievedBlockPool[0];
+            Message message = newBlock.Messages[0];
+            bool isValid = general2.MessageChain.IsValidMessage(message);
+
+            Assert.IsTrue(isValid);
+        }
+
+        [TestMethod]
+        public void InvalidBaseInputMessage()
+        {
+            const Decisions workingDecision = Decisions.Attack;
+            CommandService commandService = new CommandService();
+            General general1 = commandService.CreateGeneral(workingDecision);
+            General general2 = commandService.CreateGeneral(workingDecision);
+
+            general1.DeclareIninitialPreference();
+            Block newBlock = general2.RecievedBlockPool[0];
+            Message message = newBlock.Messages[0];
+
+            byte[] general1TargetHash = HashUtilities.ComputeSHA256(general1.PublicKey);
+            byte[] general2TargetHash = HashUtilities.ComputeSHA256(general2.PublicKey);
+
+            MessageOut input = new MessageOut
+            {
+                Decision = Decisions.Retreat,
+                RecipientKeyHash = general1TargetHash
+            };
+            MessageOut output = new MessageOut
+            {
+                Decision = Decisions.Retreat,
+                RecipientKeyHash = general2TargetHash
+            };
+
+            Message fakeMessage = Message.CreateNewMessage(new List<MessageOut> { input }, new List<MessageOut> { output }, general1);
+
+            bool isValid = general2.MessageChain.IsValidMessage(fakeMessage);
+
+            Assert.IsFalse(isValid);
+        }
     }
 }
