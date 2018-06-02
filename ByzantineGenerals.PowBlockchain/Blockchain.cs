@@ -78,7 +78,7 @@ namespace ByzantineGenerals.PowBlockchain
                 {
                     if (_blocks[i].ContainsMessageOut(messageInput.PreviousMessageHash, messageInput.PreviousMessageIdx, out MessageOut output))
                     {
-                        if (Message.InputMatchesOutput(output, messageInput))
+                        if (Message.InputMatchesOutput(output, messageInput, message.SenderPublicKey))
                         {
                             if (messageInput.Decision == Decisions.Attack)
                             {

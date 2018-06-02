@@ -11,6 +11,22 @@ namespace ByzantineGenerals.Pow.Tests
         byte[] _sampleBytes = Encoding.ASCII.GetBytes("Hello World");
 
         [TestMethod]
+        public void ValidBaseInputMessage()
+        {
+            const Decisions workingDecision = Decisions.Attack;
+            CommandService commandService = new CommandService();
+            General general1 = commandService.CreateGeneral(workingDecision);
+            General general2 = commandService.CreateGeneral(workingDecision);
+
+            general1.DeclareIninitialPreference();
+            Block newBlock = general2.RecievedBlockPool[0];
+            Message message = newBlock.Messages[0];
+            bool isValid = general2.MessageChain.IsValidMessage(message);
+
+            Assert.IsTrue(isValid);
+        }
+
+        [TestMethod]
         public void MessageSigning()
         {
 

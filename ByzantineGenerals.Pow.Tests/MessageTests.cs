@@ -30,62 +30,44 @@ namespace ByzantineGenerals.Pow.Tests
         public void MessageInputsMatch()
         {
             const Decisions workingDecision = Decisions.Attack;
-            var general = new TestRSAProvider();
-            //CommandService commandService = new CommandService();
-            //General general = commandService.CreateGeneral(workingDecision);
-            Message baseMessage = Message.CreateBaseDecision(workingDecision, general.PublicKey);
-            MessageOut messageOut = new MessageOut(workingDecision, general.PublicKey);
-            Message newMessage = Message.CreateNewMessage(baseMessage.Outputs, new List<MessageOut> { messageOut }, general);
-            bool match = Message.InputMatchesOutput(baseMessage.Outputs[0], newMessage.Inputs[0]);
+            var rsaProvider = new TestRSAProvider();
+
+            Message baseMessage = Message.CreateBaseDecision(workingDecision, rsaProvider.PublicKey);
+            MessageOut messageOut = new MessageOut(workingDecision, rsaProvider.PublicKey);
+            Message newMessage = Message.CreateNewMessage(baseMessage.Outputs, new List<MessageOut> { messageOut }, rsaProvider);
+            bool match = Message.InputMatchesOutput(baseMessage.Outputs[0], newMessage.Inputs[0], baseMessage.SenderPublicKey);
 
             Assert.IsTrue(match);
         }
 
         [TestMethod]
-        public void ValidBaseInputMessage()
+        public void OutputsAreConsistent()
         {
-            const Decisions workingDecision = Decisions.Attack;
-            CommandService commandService = new CommandService();
-            General general1 = commandService.CreateGeneral(workingDecision);
-            General general2 = commandService.CreateGeneral(workingDecision);
+            var rsaProvider1 = new TestRSAProvider();
+            var rsaProvider2 = new TestRSAProvider();
 
-            general1.DeclareIninitialPreference();
-            Block newBlock = general2.RecievedBlockPool[0];
-            Message message = newBlock.Messages[0];
-            bool isValid = general2.MessageChain.IsValidMessage(message);
+            Message baseMessage = Message.CreateBaseDecision(Decisions.Attack, rsaProvider1.PublicKey);
+            MessageOut messageOut1 = new MessageOut(Decisions.Attack, rsaProvider1.PublicKey);
+            MessageOut messageOut2 = new MessageOut(Decisions.Attack, rsaProvider2.PublicKey);
+            Message newMessage = Message.CreateNewMessage(baseMessage.Outputs, new List<MessageOut> { messageOut1, messageOut2 }, rsaProvider1);
 
-            Assert.IsTrue(isValid);
+            Assert.IsTrue(Message.MessageIsConsistent(newMessage));
         }
 
         [TestMethod]
-        public void DifferentOutputsRejected()
+        public void OutputsAreInconsistent()
         {
+            var rsaProvider1 = new TestRSAProvider();
+            var rsaProvider2 = new TestRSAProvider();
 
+            Message baseMessage = Message.CreateBaseDecision(Decisions.Attack, rsaProvider1.PublicKey);
+            MessageOut messageOut1 = new MessageOut(Decisions.Attack, rsaProvider1.PublicKey);
+            MessageOut messageOut2 = new MessageOut(Decisions.Retreat, rsaProvider2.PublicKey);
+            Message newMessage = Message.CreateNewMessage(baseMessage.Outputs, new List<MessageOut> { messageOut1, messageOut2 }, rsaProvider1);
+
+            Assert.IsFalse(Message.MessageIsConsistent(newMessage));
         }
 
 
-    }
-
-    class TestRSAProvider : IRSACryptoProvider
-    {
-        public RSAParameters PublicKey { get; private set; }
-        private RSACryptoServiceProvider _rSA = new RSACryptoServiceProvider();
-
-        internal TestRSAProvider()
-        {
-            this.PublicKey = _rSA.ExportParameters(false);
-        }
-
-
-        public byte[] SignMessage(MessageOut message)
-        {
-            return HashUtilities.SignMessage(message, _rSA);
-        }
-
-        public static (RSAParameters FullKey, RSAParameters PublicKey) GenerateRSAKey()
-        {
-            RSACryptoServiceProvider rSA = new RSACryptoServiceProvider();
-            return (rSA.ExportParameters(true), rSA.ExportParameters(false));
-        }
     }
 }
