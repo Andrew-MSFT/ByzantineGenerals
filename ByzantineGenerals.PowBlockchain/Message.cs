@@ -66,7 +66,7 @@ namespace ByzantineGenerals.PowBlockchain
             return decisionMessage;
         }
 
-        public static Message CreateNewMessage(List<MessageOut> inputs, List<MessageOut> outputs, General sender)
+        public static Message CreateNewMessage(List<MessageOut> inputs, List<MessageOut> outputs, IRSACryptoProvider sender)
         {
             List<MessageIn> messageInputs = new List<MessageIn>();
             foreach (MessageOut inputMessage in inputs)
@@ -100,7 +100,7 @@ namespace ByzantineGenerals.PowBlockchain
 
             //Make sure that the signature matches the provided public key
             RSAParameters publicKey = input.PublicKey;
-            bool signatureIsValid = General.VerifySignature(publicKey, previousHash, input.Signature);
+            bool signatureIsValid = HashUtilities.VerifySignature(publicKey, previousHash, input.Signature);
 
             //Make sure that the amount being used matches the corresponding output value from the previous
             bool decisionsMatch = previous.Decision == input.Decision;

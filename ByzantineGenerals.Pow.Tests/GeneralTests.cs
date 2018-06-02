@@ -22,7 +22,7 @@ namespace ByzantineGenerals.Pow.Tests
                 RecipientKeyHash = recipientHash
             };
             var signed = general.SignMessage(message);
-            bool isValidSignature = General.VerifySignature(general.PublicKey, message.ComputeSHA256(), signed);
+            bool isValidSignature = HashUtilities.VerifySignature(general.PublicKey, message.ComputeSHA256(), signed);
 
             Assert.IsTrue(isValidSignature);
         }
@@ -40,7 +40,7 @@ namespace ByzantineGenerals.Pow.Tests
                 RecipientKeyHash = recipientHash
             };
             var signed = general1.SignMessage(message);
-            bool isValidSignature = General.VerifySignature(general2.PublicKey, message.ComputeSHA256(), signed);
+            bool isValidSignature = HashUtilities.VerifySignature(general2.PublicKey, message.ComputeSHA256(), signed);
 
             Assert.IsFalse(isValidSignature);
         }
@@ -66,7 +66,7 @@ namespace ByzantineGenerals.Pow.Tests
 
             var signature = general1.SignMessage(message1);
             byte[] message2SHA = message2.ComputeSHA256();
-            bool isValidSignature = General.VerifySignature(general1.PublicKey, message2SHA, signature);
+            bool isValidSignature = HashUtilities.VerifySignature(general1.PublicKey, message2SHA, signature);
 
             Assert.IsFalse(isValidSignature);
         }
@@ -124,9 +124,9 @@ namespace ByzantineGenerals.Pow.Tests
                 RecipientKeyHash = general2TargetHash
             };
 
-            Message fakeMessage = Message.CreateNewMessage(new List<MessageOut> { input }, new List<MessageOut> { output }, general1);
-            bool isValid = general2.MessageChain.IsValidMessage(fakeMessage);
-            commandService.BroadCastDecision(fakeMessage, general1.PublicKey);
+            Message validMessage = Message.CreateNewMessage(new List<MessageOut> { input }, new List<MessageOut> { output }, general1);
+            bool isValid = general2.MessageChain.IsValidMessage(validMessage);
+            commandService.BroadCastDecision(validMessage, general1.PublicKey);
 
             Assert.IsTrue(isValid);
             Assert.AreEqual(0, general2.OrphanedMessagePool.Count);
@@ -162,9 +162,40 @@ namespace ByzantineGenerals.Pow.Tests
             Message fakeMessage = Message.CreateNewMessage(new List<MessageOut> { input }, new List<MessageOut> { output }, general1);
             bool isValid = general2.MessageChain.IsValidMessage(fakeMessage);
             commandService.BroadCastDecision(fakeMessage, general1.PublicKey);
+            general2.MineNewBlock();
 
             Assert.IsFalse(isValid);
             Assert.AreEqual(1, general2.OrphanedMessagePool.Count);
+            Assert.AreEqual(0, general2.RecievedMessagePool.Count);
+        }
+
+        [TestMethod]
+        public void RemoveQueuedMessages()
+        {
+            const Decisions workingDecision = Decisions.Attack;
+            CommandService commandService = new CommandService();
+            var keys = TestRSAProvider.GenerateRSAKey();
+            General general1 = commandService.CreateGeneral(workingDecision);
+            General general2 = commandService.CreateGeneral(workingDecision);
+
+            general1.DeclareIninitialPreference();
+
+            List<MessageOut> publicDecisions = new List<MessageOut>();
+            MessageOut messageOut = general1.MessageChain[general1.MessageChain.Count - 1].Messages[0].Outputs[0];
+            List<MessageOut> inputs = new List<MessageOut> { messageOut };
+
+            MessageOut message = new MessageOut(general1.Decision, general2.PublicKey);
+            publicDecisions.Add(message);
+
+            Message broadCastMessage = Message.CreateNewMessage(inputs, publicDecisions, general1);
+            commandService.BroadCastDecision(broadCastMessage, keys.PublicKey);
+
+            Assert.AreEqual(1, general1.RecievedMessagePool.Count);
+            Assert.AreEqual(1, general2.RecievedMessagePool.Count);
+
+            general2.MineNewBlock();
+
+            Assert.AreEqual(0, general1.RecievedMessagePool.Count);
             Assert.AreEqual(0, general2.RecievedMessagePool.Count);
         }
     }

@@ -12,7 +12,13 @@ using System.Runtime.CompilerServices;
 
 namespace ByzantineGenerals.PowBlockchain
 {
-    public class General
+    public interface IRSACryptoProvider
+    {
+        RSAParameters PublicKey { get; }
+        byte[] SignMessage(MessageOut message);
+    }
+
+    public class General : IRSACryptoProvider
     {
         public Decisions Decision { get; private set; }
         public RSAParameters PublicKey { get; private set; }
@@ -26,6 +32,7 @@ namespace ByzantineGenerals.PowBlockchain
         private Block _myBlock;
         private RSACryptoServiceProvider _rSA = new RSACryptoServiceProvider();
         private CommandService _commandService;
+        private Dictionary<RSAParameters, Decisions> _currentDecisionTally = new Dictionary<RSAParameters, Decisions>();
 
         internal General(Decisions decision, CommandService commandService, Blockchain currentChain)
         {
@@ -39,11 +46,78 @@ namespace ByzantineGenerals.PowBlockchain
         public void DeclareIninitialPreference()
         {
             Message initialDecision = Message.CreateBaseDecision(this.Decision, this.PublicKey);
-            List<Message> transactions = new List<Message> { initialDecision };
-            byte[] previousHash = MessageChain.LastBlock.ComputeSHA256();
-            _myBlock = Block.MineNewBlock(transactions, previousHash);
+            this.RecievedMessagePool.Insert(0, initialDecision);
+            _myBlock = MineNewBlock();
+            DecisionArrived(this.PublicKey, this.Decision);
+        }
 
-            FinishedMiningBlock(_myBlock);
+        public void DeclareCurrentDecision()
+        {
+
+        }
+
+        private void DecisionArrived(RSAParameters generalsKey, Decisions decision)
+        {
+            if (_currentDecisionTally.ContainsKey(generalsKey))
+            {
+                _currentDecisionTally[generalsKey] = decision;
+            }
+            else
+            {
+                _currentDecisionTally.Add(generalsKey, decision);
+            }
+        }
+
+        public Decisions GetCurrentConsensus()
+        {
+            int retreatVotes = 0;
+            int attackVotes = 0;
+
+            foreach (var decision in _currentDecisionTally.Values)
+            {
+                if (decision == Decisions.Attack)
+                {
+                    attackVotes++;
+                }
+                else if (decision == Decisions.Retreat)
+                {
+                    retreatVotes++;
+                }
+                else
+                {
+                    throw new NotImplementedException();
+                }
+            }
+
+            Decisions currentDecision = attackVotes > retreatVotes ? Decisions.Attack : Decisions.Retreat;
+            return currentDecision;
+        }
+
+        public Block MineNewBlock()
+        {
+            List<Message> transactions = new List<Message>();
+
+            //Verify messages are valid before adding them to the block
+            foreach (var message in this.RecievedMessagePool)
+            {
+                if (this.MessageChain.IsValidMessage(message))
+                {
+                    transactions.Add(message);
+                }
+                else
+                {
+                    this.OrphanedMessagePool.Add(message);
+                }
+            }
+            this.RecievedMessagePool.Clear();
+
+            byte[] previousHash = MessageChain.LastBlock.ComputeSHA256();
+            Block block = Block.MineNewBlock(transactions, previousHash);
+
+            this.MessageChain.Add(block);
+            _commandService.NotifyNewBlockMined(block, this.PublicKey);
+
+            return block;
         }
 
         public void Coordinate()
@@ -53,12 +127,8 @@ namespace ByzantineGenerals.PowBlockchain
 
             foreach (var general in _commandService.GetOtherGenerals(this.PublicKey))
             {
-                if (!general.PublicKey.Equals(this.PublicKey))
-                {
-
-                    MessageOut message = new MessageOut(this.Decision, general.PublicKey);
-                    publicDecisions.Add(message);
-                }
+                MessageOut message = new MessageOut(this.Decision, general.PublicKey);
+                publicDecisions.Add(message);
             }
 
             Message broadCastMessage = Message.CreateNewMessage(inputs, publicDecisions, this);
@@ -74,6 +144,11 @@ namespace ByzantineGenerals.PowBlockchain
             {
                 this.RecievedBlockPool.Add(block);
                 this.MessageChain.Add(block);
+                //TO DO: Update incoming decision
+                foreach (var message in block.Messages)
+                {
+                    this.RecievedMessagePool.Remove(message);
+                }
             }
             else
             {
@@ -84,54 +159,14 @@ namespace ByzantineGenerals.PowBlockchain
         public void RecieveMessage(Messenger messenger)
         {
             Message message = messenger.Message;
-            if (this.MessageChain.IsValidMessage(message))
-            {
-                this.RecievedMessagePool.Add(message);
-            }
-            else
-            {
-                this.OrphanedMessagePool.Add(message);
-            }
+            this.RecievedMessagePool.Add(message);
         }
-
-        private void FinishedMiningBlock(Block block)
-        {
-            this.MessageChain.Add(block);
-            _commandService.NotifyNewBlockMined(block, this.PublicKey);
-        }
-
-
 
         public byte[] SignMessage(MessageOut message)
         {
-            string serialized = JsonConvert.SerializeObject(message);
-            byte[] hashedValue = HashUtilities.ComputeSHA256(serialized);
-            //Create an RSAPKCS1SignatureFormatter object and pass it the   
-            //RSACryptoServiceProvider to transfer the private key.  
-            RSAPKCS1SignatureFormatter rSAFormatter = new RSAPKCS1SignatureFormatter(_rSA);
-
-            //Set the hash algorithm  
-            rSAFormatter.SetHashAlgorithm("SHA256");
-
-            //Create a signature for hashValue
-            byte[] signedHashValue = rSAFormatter.CreateSignature(hashedValue);
-            return signedHashValue;
+            return HashUtilities.SignMessage(message, _rSA);
         }
 
-        public static bool VerifySignature(RSAParameters publicKey, byte[] originalData, byte[] signedHash)
-        {
-            RSACryptoServiceProvider rSA = new RSACryptoServiceProvider();
-            rSA.ImportParameters(publicKey);
-            RSAPKCS1SignatureDeformatter RSADeformatter = new RSAPKCS1SignatureDeformatter(rSA);
-            RSADeformatter.SetHashAlgorithm("SHA256");
-            bool signatureIsValid = RSADeformatter.VerifySignature(originalData, signedHash);
-            return signatureIsValid;
-        }
 
-        public static (RSAParameters FullKey, RSAParameters PublicKey) GenerateRSAKey()
-        {
-            RSACryptoServiceProvider rSA = new RSACryptoServiceProvider();
-            return (rSA.ExportParameters(true), rSA.ExportParameters(false));
-        }
     }
 }

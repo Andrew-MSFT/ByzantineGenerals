@@ -73,5 +73,31 @@ namespace ByzantineGenerals.PowBlockchain
             }
         }
 
+        public static byte[] SignMessage(MessageOut message, RSACryptoServiceProvider rsaProvider)
+        {
+            string serialized = JsonConvert.SerializeObject(message);
+            byte[] hashedValue = HashUtilities.ComputeSHA256(serialized);
+            //Create an RSAPKCS1SignatureFormatter object and pass it the   
+            //RSACryptoServiceProvider to transfer the private key.  
+            RSAPKCS1SignatureFormatter rSAFormatter = new RSAPKCS1SignatureFormatter(rsaProvider);
+
+            //Set the hash algorithm  
+            rSAFormatter.SetHashAlgorithm("SHA256");
+
+            //Create a signature for hashValue
+            byte[] signedHashValue = rSAFormatter.CreateSignature(hashedValue);
+            return signedHashValue;
+        }
+
+        public static bool VerifySignature(RSAParameters publicKey, byte[] originalData, byte[] signedHash)
+        {
+            RSACryptoServiceProvider rSA = new RSACryptoServiceProvider();
+            rSA.ImportParameters(publicKey);
+            RSAPKCS1SignatureDeformatter RSADeformatter = new RSAPKCS1SignatureDeformatter(rSA);
+            RSADeformatter.SetHashAlgorithm("SHA256");
+            bool signatureIsValid = RSADeformatter.VerifySignature(originalData, signedHash);
+            return signatureIsValid;
+        }
+
     }
 }

@@ -15,7 +15,7 @@ namespace ByzantineGenerals.Pow.Tests
         public void BaseMessage()
         {
             const Decisions workingDecision = Decisions.Attack;
-            (RSAParameters FullKey, RSAParameters PublicKey) keys = General.GenerateRSAKey();
+            (RSAParameters FullKey, RSAParameters PublicKey) keys = TestRSAProvider.GenerateRSAKey();
             Message baseMessage = Message.CreateBaseDecision(workingDecision, keys.PublicKey);
             byte[] pubKeyHash = HashUtilities.ComputeSHA256(keys.PublicKey);
 
@@ -30,8 +30,9 @@ namespace ByzantineGenerals.Pow.Tests
         public void MessageInputsMatch()
         {
             const Decisions workingDecision = Decisions.Attack;
-            CommandService commandService = new CommandService();
-            General general = commandService.CreateGeneral(workingDecision);
+            var general = new TestRSAProvider();
+            //CommandService commandService = new CommandService();
+            //General general = commandService.CreateGeneral(workingDecision);
             Message baseMessage = Message.CreateBaseDecision(workingDecision, general.PublicKey);
             MessageOut messageOut = new MessageOut(workingDecision, general.PublicKey);
             Message newMessage = Message.CreateNewMessage(baseMessage.Outputs, new List<MessageOut> { messageOut }, general);
@@ -56,6 +57,35 @@ namespace ByzantineGenerals.Pow.Tests
             Assert.IsTrue(isValid);
         }
 
+        [TestMethod]
+        public void DifferentOutputsRejected()
+        {
 
+        }
+
+
+    }
+
+    class TestRSAProvider : IRSACryptoProvider
+    {
+        public RSAParameters PublicKey { get; private set; }
+        private RSACryptoServiceProvider _rSA = new RSACryptoServiceProvider();
+
+        internal TestRSAProvider()
+        {
+            this.PublicKey = _rSA.ExportParameters(false);
+        }
+
+
+        public byte[] SignMessage(MessageOut message)
+        {
+            return HashUtilities.SignMessage(message, _rSA);
+        }
+
+        public static (RSAParameters FullKey, RSAParameters PublicKey) GenerateRSAKey()
+        {
+            RSACryptoServiceProvider rSA = new RSACryptoServiceProvider();
+            return (rSA.ExportParameters(true), rSA.ExportParameters(false));
+        }
     }
 }
