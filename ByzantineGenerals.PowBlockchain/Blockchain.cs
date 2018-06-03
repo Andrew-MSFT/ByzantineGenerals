@@ -28,7 +28,7 @@ namespace ByzantineGenerals.PowBlockchain
             }
         }
 
-        public void Add(Block block)
+        internal void Add(Block block)
         {
             _blocks.Add(block);
         }

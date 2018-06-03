@@ -1,5 +1,6 @@
 ﻿using ByzantineGenerals.PowBlockchain;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
 using System.Collections.Generic;
 using System.Security.Cryptography;
 
@@ -28,10 +29,10 @@ namespace ByzantineGenerals.Pow.Tests
             TestRSAProvider rsaProvider = new TestRSAProvider();
             Blockchain blockchain = new Blockchain();
             Message baseMessage = Message.CreateDecisionBase(Decisions.Attack, rsaProvider.PublicKey);
-            Block newBlock = Block.MineNewBlock(new List<Message> { baseMessage }, blockchain.LastBlock.ComputeSHA256());
+            blockchain.MineNextBlock(new List<Message> { baseMessage });
+
             List<MessageOut> newOutputs = new List<MessageOut> { new MessageOut(Decisions.Attack, rsaProvider.PublicKey) };
             Message nextMessage = Message.CreateNewMessage(baseMessage.Outputs, newOutputs, rsaProvider);
-            blockchain.Add(newBlock);
             Block nextBlock = Block.MineNewBlock(new List<Message> { nextMessage }, blockchain.LastBlock.ComputeSHA256());
 
             bool isValidBlock = blockchain.IsValidBlock(nextBlock);
@@ -46,8 +47,7 @@ namespace ByzantineGenerals.Pow.Tests
             TestRSAProvider rsaProvider = new TestRSAProvider();
 
             Message baseMessage = Message.CreateDecisionBase(Decisions.Attack, rsaProvider.PublicKey);
-            Block newBlock = Block.MineNewBlock(new List<Message> { baseMessage }, blockchain.LastBlock.ComputeSHA256());
-            blockchain.Add(newBlock);
+            blockchain.MineNextBlock(new List<Message> { baseMessage });
 
             List<MessageOut> newOutputs = new List<MessageOut> { new MessageOut(Decisions.Retreat, rsaProvider.PublicKey) };
             Message nextMessage = Message.CreateNewMessage(baseMessage.Outputs, newOutputs, rsaProvider);
@@ -62,8 +62,12 @@ namespace ByzantineGenerals.Pow.Tests
         {
             Blockchain blockchain = new Blockchain();
             TestRSAProvider rsaProvider = new TestRSAProvider();
-            Message messageBase = Message.CreateDecisionBase(Decisions.Attack, rsaProvider.PublicKey);
-            
+            TestRSAProvider rsaProvider1 = new TestRSAProvider();
+            Message decisionBase = Message.CreateDecisionBase(Decisions.Attack, rsaProvider.PublicKey);
+            blockchain.MineNextBlock(new List<Message> { decisionBase });
+
+
+            throw new NotImplementedException();
         }
 
     }
