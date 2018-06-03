@@ -16,7 +16,7 @@ namespace ByzantineGenerals.Pow.Tests
         {
             const Decisions workingDecision = Decisions.Attack;
             (RSAParameters FullKey, RSAParameters PublicKey) keys = TestRSAProvider.GenerateRSAKey();
-            Message baseMessage = Message.CreateBaseDecision(workingDecision, keys.PublicKey);
+            Message baseMessage = Message.CreateDecisionBase(workingDecision, keys.PublicKey);
             byte[] pubKeyHash = HashUtilities.ComputeSHA256(keys.PublicKey);
 
             Assert.AreEqual(1, baseMessage.Inputs.Count);
@@ -32,7 +32,7 @@ namespace ByzantineGenerals.Pow.Tests
             const Decisions workingDecision = Decisions.Attack;
             var rsaProvider = new TestRSAProvider();
 
-            Message baseMessage = Message.CreateBaseDecision(workingDecision, rsaProvider.PublicKey);
+            Message baseMessage = Message.CreateDecisionBase(workingDecision, rsaProvider.PublicKey);
             MessageOut messageOut = new MessageOut(workingDecision, rsaProvider.PublicKey);
             Message newMessage = Message.CreateNewMessage(baseMessage.Outputs, new List<MessageOut> { messageOut }, rsaProvider);
             bool match = Message.InputMatchesOutput(baseMessage.Outputs[0], newMessage.Inputs[0], baseMessage.SenderPublicKey);
@@ -46,7 +46,7 @@ namespace ByzantineGenerals.Pow.Tests
             var rsaProvider1 = new TestRSAProvider();
             var rsaProvider2 = new TestRSAProvider();
 
-            Message baseMessage = Message.CreateBaseDecision(Decisions.Attack, rsaProvider1.PublicKey);
+            Message baseMessage = Message.CreateDecisionBase(Decisions.Attack, rsaProvider1.PublicKey);
             MessageOut messageOut1 = new MessageOut(Decisions.Attack, rsaProvider1.PublicKey);
             MessageOut messageOut2 = new MessageOut(Decisions.Attack, rsaProvider2.PublicKey);
             Message newMessage = Message.CreateNewMessage(baseMessage.Outputs, new List<MessageOut> { messageOut1, messageOut2 }, rsaProvider1);
@@ -60,14 +60,13 @@ namespace ByzantineGenerals.Pow.Tests
             var rsaProvider1 = new TestRSAProvider();
             var rsaProvider2 = new TestRSAProvider();
 
-            Message baseMessage = Message.CreateBaseDecision(Decisions.Attack, rsaProvider1.PublicKey);
+            Message baseMessage = Message.CreateDecisionBase(Decisions.Attack, rsaProvider1.PublicKey);
             MessageOut messageOut1 = new MessageOut(Decisions.Attack, rsaProvider1.PublicKey);
             MessageOut messageOut2 = new MessageOut(Decisions.Retreat, rsaProvider2.PublicKey);
             Message newMessage = Message.CreateNewMessage(baseMessage.Outputs, new List<MessageOut> { messageOut1, messageOut2 }, rsaProvider1);
 
             Assert.IsFalse(Message.MessageIsConsistent(newMessage));
         }
-
 
     }
 }

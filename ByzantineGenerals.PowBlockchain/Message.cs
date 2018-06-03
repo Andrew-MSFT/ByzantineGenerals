@@ -14,8 +14,17 @@ namespace ByzantineGenerals.PowBlockchain
         public int PreviousMessageBlockIdx { get; set; }
         public int PreviousMessageIdx { get; set; }
         public Decisions Decision { get; set; }
-        //public RSAParameters PublicKey { get; set; }
         public byte[] Signature { get; set; }
+
+        public MessageIn(byte[] previousMessageHash, int previousMessageBlockIdx, int previousMessageIdx, Decisions decision, 
+            byte[] signature)
+        {
+            this.PreviousMessageHash = previousMessageHash;
+            this.PreviousMessageBlockIdx = previousMessageBlockIdx;
+            this.PreviousMessageIdx = previousMessageIdx;
+            this.Decision = decision;
+            this.Signature = signature;
+        }
 
         public bool IsBaseMessage()
         {
@@ -75,16 +84,16 @@ namespace ByzantineGenerals.PowBlockchain
             return attackCount > retreatCount ? Decisions.Attack : Decisions.Retreat;
         }
 
-        public static Message CreateBaseDecision(Decisions decision, RSAParameters publicKey)
+        public static Message CreateDecisionBase(Decisions decision, RSAParameters publicKey)
         {
 
-            MessageIn baseMessageIn = new MessageIn
-            {
-                Decision = decision,
-                PreviousMessageHash = Block.DecisionInBaseHash,
-                PreviousMessageIdx = Block.DecisionInBaseIndex,
-                Signature = Block.DecisionInSignature
-            };
+            MessageIn baseMessageIn = new MessageIn(
+                Block.DecisionInBaseHash,
+                Block.DecisionInBaseIndex,
+                Block.DecisionInBaseIndex,
+                decision,
+                Block.DecisionInSignature
+            );
             MessageOut messageOut = new MessageOut(baseMessageIn.Decision, publicKey);
             List<MessageIn> messageInputs = new List<MessageIn> { baseMessageIn };
             List<MessageOut> messageOuts = new List<MessageOut> { messageOut };
@@ -104,12 +113,13 @@ namespace ByzantineGenerals.PowBlockchain
             {
                 byte[] signature = sender.SignMessage(inputMessage);
                 MessageIn messageIn = new MessageIn
-                {
-                    Decision = inputMessage.Decision,
-                    PreviousMessageIdx = 0,
-                    PreviousMessageHash = inputMessage.ComputeSHA256(),
-                    Signature = signature
-                };
+                (
+                    inputMessage.ComputeSHA256(),
+                    -1, //TO DO BlockIdx
+                    0,
+                    inputMessage.Decision,
+                    signature
+                );
 
                 messageInputs.Add(messageIn);
             }

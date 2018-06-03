@@ -45,7 +45,7 @@ namespace ByzantineGenerals.PowBlockchain
 
         public void DeclareIninitialPreference()
         {
-            Message initialDecision = Message.CreateBaseDecision(this.Decision, this.PublicKey);
+            Message initialDecision = Message.CreateDecisionBase(this.Decision, this.PublicKey);
             this.RecievedMessagePool.Insert(0, initialDecision);
             _myBlock = MineNewBlock();
             DecisionArrived(this.PublicKey, this.Decision);

@@ -88,6 +88,20 @@ namespace ByzantineGenerals.Pow.Tests
         }
 
         [TestMethod]
+        public void ValidateSenderBlockChain()
+        {
+            CommandService commandService = new CommandService();
+            General general = commandService.CreateGeneral(Decisions.Attack);
+            General testGeneral = commandService.CreateGeneral(Decisions.Attack);
+
+            general.DeclareIninitialPreference();
+            Block recievedBlock = testGeneral.RecievedBlockPool[0];
+            bool blockInChain = general.MessageChain.ContainsBlock(recievedBlock);
+
+            Assert.IsTrue(blockInChain);
+        }
+
+        [TestMethod]
         public void SendInvalidBlock()
         {
             const Decisions workingDecision = Decisions.Attack;

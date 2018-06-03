@@ -176,5 +176,12 @@ namespace ByzantineGenerals.PowBlockchain
 
             return HashUtilities.ComputeSHA256(bytes);
         }
+
+        public Block MineNextBlock(List<Message> messages)
+        {
+            Block block = Block.MineNewBlock(messages, this.LastBlock.ComputeSHA256());
+            Add(block);
+            return block;
+        }
     }
 }

@@ -50,9 +50,9 @@ namespace ByzantineGenerals.PowBlockchain
             }
         }
 
-        public static Block MineNewBlock(List<Message> transactions, byte[] previousHash)
+        internal static Block MineNewBlock(List<Message> messages, byte[] previousHash)
         {
-            Block block = new Block(transactions, previousHash);
+            Block block = new Block(messages, previousHash);
             block.CalculateNonce();
             return block;
         }

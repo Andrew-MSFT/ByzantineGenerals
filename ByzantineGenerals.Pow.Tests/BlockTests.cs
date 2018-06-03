@@ -8,15 +8,13 @@ namespace ByzantineGenerals.Pow.Tests
     [TestClass]
     public class BlockTests
     {
-        private RSACryptoServiceProvider _rSA = new RSACryptoServiceProvider();
 
         [TestMethod]
         public void ContainsTransaction()
         {
-            RSAParameters publicKey = _rSA.ExportParameters(false);
-            Blockchain blockchain = new Blockchain();
-            Message baseMessage = Message.CreateBaseDecision(Decisions.Attack, publicKey);
-            Block newBlock = Block.MineNewBlock(new List<Message> { baseMessage }, blockchain.LastBlock.ComputeSHA256());
+            RSAParameters publicKey = TestRSAProvider.GenerateRSAKey().PublicKey;
+            Message baseMessage = Message.CreateDecisionBase(Decisions.Attack, publicKey);
+            Block newBlock = Block.MineNewBlock(new List<Message> { baseMessage }, Blockchain.GenesisBlockHash);
 
             bool containsOutput = newBlock.ContainsMessageOut(newBlock.Messages[0].Outputs[0].ComputeSHA256(), 0, out MessageOut messageOut);
             Assert.IsTrue(containsOutput);
@@ -25,75 +23,12 @@ namespace ByzantineGenerals.Pow.Tests
         [TestMethod]
         public void NotContainsTransaction()
         {
-            RSAParameters publicKey = _rSA.ExportParameters(false);
-            Blockchain blockchain = new Blockchain();
-            Message baseMessage = Message.CreateBaseDecision(Decisions.Attack, publicKey);
-            Block newBlock = Block.MineNewBlock(new List<Message> { baseMessage }, blockchain.LastBlock.ComputeSHA256());
+            RSAParameters publicKey = TestRSAProvider.GenerateRSAKey().PublicKey;
+            Message baseMessage = Message.CreateDecisionBase(Decisions.Attack, publicKey);
+            Block newBlock = Block.MineNewBlock(new List<Message> { baseMessage }, Blockchain.GenesisBlockHash);
 
             bool containsOutput = newBlock.ContainsMessageOut(newBlock.Messages[0].Outputs[0].ComputeSHA256(), 1, out MessageOut messageOut);
             Assert.IsFalse(containsOutput);
-        }
-
-        [TestMethod]
-        public void SimpleBlockValidation()
-        {
-            RSAParameters publicKey = _rSA.ExportParameters(false);
-            Blockchain blockchain = new Blockchain();
-            Message baseMessage = Message.CreateBaseDecision(Decisions.Attack, publicKey);
-            Block newBlock = Block.MineNewBlock(new List<Message> { baseMessage }, blockchain.LastBlock.ComputeSHA256());
-
-            bool isValidBlock = blockchain.IsValidBlock(newBlock);
-            Assert.IsTrue(isValidBlock);
-        }
-
-        [TestMethod]
-        public void BlockValidation()
-        {
-            CommandService commandService = new CommandService();
-            General general = (General)commandService.CreateGeneral(Decisions.Attack);
-            Blockchain blockchain = new Blockchain();
-            Message baseMessage = Message.CreateBaseDecision(Decisions.Attack, general.PublicKey);
-            Block newBlock = Block.MineNewBlock(new List<Message> { baseMessage }, blockchain.LastBlock.ComputeSHA256());
-            List<MessageOut> newOutputs = new List<MessageOut> {new MessageOut(Decisions.Attack, general.PublicKey) };
-            Message nextMessage = Message.CreateNewMessage(baseMessage.Outputs, newOutputs, general);
-            blockchain.Add(newBlock);
-            Block nextBlock = Block.MineNewBlock(new List<Message> { nextMessage}, blockchain.LastBlock.ComputeSHA256());
-
-            bool isValidBlock = blockchain.IsValidBlock(nextBlock);
-            Assert.IsTrue(isValidBlock);
-        }
-
-        [TestMethod]
-        public void InvalidBlock()
-        {
-            CommandService commandService = new CommandService();
-            Blockchain blockchain = new Blockchain();
-            General general = commandService.CreateGeneral(Decisions.Attack);
-
-            Message baseMessage = Message.CreateBaseDecision(Decisions.Attack, general.PublicKey);
-            Block newBlock = Block.MineNewBlock(new List<Message> { baseMessage }, blockchain.LastBlock.ComputeSHA256());
-            blockchain.Add(newBlock);
-
-            List<MessageOut> newOutputs = new List<MessageOut> {new MessageOut(Decisions.Retreat, general.PublicKey) };
-            Message nextMessage = Message.CreateNewMessage(baseMessage.Outputs, newOutputs, general);
-            Block nextBlock = Block.MineNewBlock(new List<Message> { nextMessage}, blockchain.LastBlock.ComputeSHA256());
-
-            bool isValidBlock = blockchain.IsValidBlock(nextBlock);
-            Assert.IsFalse(isValidBlock);
-        }
-
-        [TestMethod]
-        public void ValidateSenderBlockChain()
-        {
-            CommandService commandService = new CommandService();
-            General general = commandService.CreateGeneral(Decisions.Attack);
-            General testGeneral = commandService.CreateGeneral(Decisions.Attack);
-
-            general.DeclareIninitialPreference();
-            Block recievedBlock = testGeneral.RecievedBlockPool[0];
-            bool blockInChain = general.MessageChain.ContainsBlock(recievedBlock);
-            
-            Assert.IsTrue(blockInChain);
         }
     }
 
