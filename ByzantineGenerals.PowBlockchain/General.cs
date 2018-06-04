@@ -114,7 +114,7 @@ namespace ByzantineGenerals.PowBlockchain
             byte[] previousHash = MessageChain.LastBlock.ComputeSHA256();
             Block block = Block.MineNewBlock(transactions, previousHash);
 
-            this.MessageChain.Add(block);
+            this.MessageChain.AddBlock(block);
             _commandService.NotifyNewBlockMined(block, this.PublicKey);
 
             return block;
@@ -122,18 +122,18 @@ namespace ByzantineGenerals.PowBlockchain
 
         public void Coordinate()
         {
-            List<MessageOut> publicDecisions = new List<MessageOut>();
-            List<MessageOut> inputs = new List<MessageOut> { _myBlock.Messages[0].Outputs[0] };
+            //List<MessageOut> publicDecisions = new List<MessageOut>();
+            //List<MessageOut> inputs = new List<MessageOut> { _myBlock.Messages[0].Outputs[0] };
 
-            foreach (var general in _commandService.GetOtherGenerals(this.PublicKey))
-            {
-                MessageOut message = new MessageOut(this.Decision, general.PublicKey);
-                publicDecisions.Add(message);
-            }
+            //foreach (var general in _commandService.GetOtherGenerals(this.PublicKey))
+            //{
+            //    MessageOut message = new MessageOut(this.Decision, general.PublicKey);
+            //    publicDecisions.Add(message);
+            //}
 
-            Message broadCastMessage = Message.CreateNewMessage(inputs, publicDecisions, this);
+            //Message broadCastMessage = Message.CreateNewMessage(inputs, publicDecisions, this);
 
-            _commandService.BroadCastDecision(broadCastMessage, this.PublicKey);
+            //_commandService.BroadCastDecision(broadCastMessage, this.PublicKey);
         }
 
 
@@ -143,7 +143,7 @@ namespace ByzantineGenerals.PowBlockchain
             if (this.MessageChain.IsValidBlock(block))
             {
                 this.RecievedBlockPool.Add(block);
-                this.MessageChain.Add(block);
+                this.MessageChain.AddBlock(block);
                 //TO DO: Update incoming decision
                 foreach (var message in block.Messages)
                 {

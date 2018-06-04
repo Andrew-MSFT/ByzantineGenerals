@@ -31,8 +31,7 @@ namespace ByzantineGenerals.Pow.Tests
             Message baseMessage = Message.CreateDecisionBase(Decisions.Attack, rsaProvider.PublicKey);
             blockchain.MineNextBlock(new List<Message> { baseMessage });
 
-            List<MessageOut> newOutputs = new List<MessageOut> { new MessageOut(Decisions.Attack, rsaProvider.PublicKey) };
-            Message nextMessage = Message.CreateNewMessage(baseMessage.Outputs, newOutputs, rsaProvider);
+            Message nextMessage = Message.CreateNewMessage(baseMessage.Outputs, rsaProvider.PublicKey, rsaProvider);
             Block nextBlock = Block.MineNewBlock(new List<Message> { nextMessage }, blockchain.LastBlock.ComputeSHA256());
 
             bool isValidBlock = blockchain.IsValidBlock(nextBlock);
@@ -42,7 +41,6 @@ namespace ByzantineGenerals.Pow.Tests
         [TestMethod]
         public void InvalidBlock()
         {
-            CommandService commandService = new CommandService();
             Blockchain blockchain = new Blockchain();
             TestRSAProvider rsaProvider = new TestRSAProvider();
 
@@ -61,13 +59,20 @@ namespace ByzantineGenerals.Pow.Tests
         public void UseRecievedDecisions()
         {
             Blockchain blockchain = new Blockchain();
-            TestRSAProvider rsaProvider = new TestRSAProvider();
-            TestRSAProvider rsaProvider1 = new TestRSAProvider();
-            Message decisionBase = Message.CreateDecisionBase(Decisions.Attack, rsaProvider.PublicKey);
-            blockchain.MineNextBlock(new List<Message> { decisionBase });
+            TestRSAProvider sender = new TestRSAProvider();
+            TestRSAProvider recipient = new TestRSAProvider();
+            //Send the decision base to the sender
+            Message decisionBase = Message.CreateDecisionBase(Decisions.Attack, sender.PublicKey);
+            //Mine the initial decision into a block so it can be used
+            Block decisionBaseBlock = blockchain.MineNextBlock(new List<Message> { decisionBase });
+            //Send the decision to the next recipient
+            Message sentDecision = Message.CreateNewMessage(decisionBase.Outputs, recipient.PublicKey, sender);
+            Block sentDecisionBlock = blockchain.MineNextBlock(new List<Message> { sentDecision });
+            Message passedOnDecision = Message.CreateNewMessage(sentDecision.Outputs, sender.PublicKey, recipient);
 
+            bool isValid = blockchain.IsValidMessage(passedOnDecision);
 
-            throw new NotImplementedException();
+            Assert.IsTrue(isValid);
         }
 
     }

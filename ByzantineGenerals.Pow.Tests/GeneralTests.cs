@@ -123,7 +123,7 @@ namespace ByzantineGenerals.Pow.Tests
                 RecipientKeyHash = general2TargetHash
             };
 
-            Message fakeMessage = Message.CreateNewMessage(new List<MessageOut> { input }, new List<MessageOut> { output }, general1);
+            Message fakeMessage = Message.CreateNewMessage(new List<MessageOut> { input }, general2.PublicKey, general1);
             bool isValid = general2.MessageChain.IsValidMessage(fakeMessage);
             commandService.BroadCastDecision(fakeMessage, general1.PublicKey);
 
@@ -154,7 +154,7 @@ namespace ByzantineGenerals.Pow.Tests
                 RecipientKeyHash = general2TargetHash
             };
 
-            Message validMessage = Message.CreateNewMessage(new List<MessageOut> { input }, new List<MessageOut> { output }, general1);
+            Message validMessage = Message.CreateNewMessage(new List<MessageOut> { input }, general2.PublicKey, general1);
             bool isValid = general2.MessageChain.IsValidMessage(validMessage);
             commandService.BroadCastDecision(validMessage, general1.PublicKey);
 
@@ -189,7 +189,7 @@ namespace ByzantineGenerals.Pow.Tests
                 RecipientKeyHash = general2TargetHash
             };
 
-            Message fakeMessage = Message.CreateNewMessage(new List<MessageOut> { input }, new List<MessageOut> { output }, general1);
+            Message fakeMessage = Message.CreateNewMessage(new List<MessageOut> { input }, general2.PublicKey, general1);
             bool isValid = general2.MessageChain.IsValidMessage(fakeMessage);
             commandService.BroadCastDecision(fakeMessage, general1.PublicKey);
             general2.MineNewBlock();
@@ -217,7 +217,7 @@ namespace ByzantineGenerals.Pow.Tests
             MessageOut message = new MessageOut(general1.Decision, general2.PublicKey);
             publicDecisions.Add(message);
 
-            Message broadCastMessage = Message.CreateNewMessage(inputs, publicDecisions, general1);
+            Message broadCastMessage = Message.CreateNewMessage(inputs, general2.PublicKey, general1);
             commandService.BroadCastDecision(broadCastMessage, keys.PublicKey);
 
             Assert.AreEqual(1, general1.RecievedMessagePool.Count);

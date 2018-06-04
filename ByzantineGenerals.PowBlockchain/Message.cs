@@ -16,7 +16,7 @@ namespace ByzantineGenerals.PowBlockchain
         public Decisions Decision { get; set; }
         public byte[] Signature { get; set; }
 
-        public MessageIn(byte[] previousMessageHash, int previousMessageBlockIdx, int previousMessageIdx, Decisions decision, 
+        public MessageIn(byte[] previousMessageHash, int previousMessageBlockIdx, int previousMessageIdx, Decisions decision,
             byte[] signature)
         {
             this.PreviousMessageHash = previousMessageHash;
@@ -39,11 +39,13 @@ namespace ByzantineGenerals.PowBlockchain
     {
         public Decisions Decision { get; set; }
         public byte[] RecipientKeyHash { get; set; }
+        public Guid Id { get; set; }
 
         public MessageOut(Decisions decision, RSAParameters recipientKey)
         {
             this.Decision = decision;
             this.RecipientKeyHash = HashUtilities.ComputeSHA256(recipientKey);
+            this.Id = Guid.NewGuid();
         }
 
         public byte[] ComputeSHA256()
@@ -62,10 +64,15 @@ namespace ByzantineGenerals.PowBlockchain
 
         public Decisions GetInputConsensus()
         {
+            return GetConsensusDecision(this.Inputs);
+        }
+
+        public static Decisions GetConsensusDecision(List<MessageIn> inputs)
+        {
             int attackCount = 0;
             int retreatCount = 0;
 
-            foreach (var input in this.Inputs)
+            foreach (var input in inputs)
             {
                 if (input.Decision == Decisions.Attack)
                 {
@@ -106,7 +113,54 @@ namespace ByzantineGenerals.PowBlockchain
             return decisionMessage;
         }
 
-        public static Message CreateNewMessage(List<MessageOut> inputs, List<MessageOut> outputs, IRSACryptoProvider sender)
+        public static Message CreateNewMessage(List<MessageOut> inputs, RSAParameters recipient, IRSACryptoProvider sender)
+        {
+            List<RSAParameters> recipients = new List<RSAParameters> { recipient };
+            return CreateNewMessage(inputs, recipients, sender);
+        }
+
+        public static Message CreateNewMessage(List<MessageOut> inputs, List<MessageOut> messageOutputs, IRSACryptoProvider sender)
+        {
+            List<MessageIn> messageInputs = CreateMessageInputs(inputs, sender);
+
+            Message message = new Message
+            {
+                SenderPublicKey = sender.PublicKey,
+                Inputs = messageInputs,
+                Outputs = messageOutputs
+            };
+            return message;
+        }
+
+            public static Message CreateNewMessage(List<MessageOut> inputs, List<RSAParameters> recipients, IRSACryptoProvider sender)
+        {
+            List<MessageIn> messageInputs = CreateMessageInputs(inputs, sender);
+            List<MessageOut> messageOutputs = CreateMessageOutputs(recipients, messageInputs);
+
+            Message message = new Message
+            {
+                SenderPublicKey = sender.PublicKey,
+                Inputs = messageInputs,
+                Outputs = messageOutputs
+            };
+            return message;
+        }
+
+        private static List<MessageOut> CreateMessageOutputs(List<RSAParameters> recipients, List<MessageIn> messageInputs)
+        {
+            List<MessageOut> messageOutputs = new List<MessageOut>();
+            Decisions outputDecision = Message.GetConsensusDecision(messageInputs);
+
+            foreach (RSAParameters recipient in recipients)
+            {
+                MessageOut messageOut = new MessageOut(outputDecision, recipient);
+                messageOutputs.Add(messageOut);
+            }
+
+            return messageOutputs;
+        }
+
+        internal static List<MessageIn> CreateMessageInputs(List<MessageOut> inputs, IRSACryptoProvider sender)
         {
             List<MessageIn> messageInputs = new List<MessageIn>();
             foreach (MessageOut inputMessage in inputs)
@@ -124,13 +178,7 @@ namespace ByzantineGenerals.PowBlockchain
                 messageInputs.Add(messageIn);
             }
 
-            Message message = new Message
-            {
-                SenderPublicKey = sender.PublicKey,
-                Inputs = messageInputs,
-                Outputs = outputs
-            };
-            return message;
+            return messageInputs;
         }
 
         public static bool InputMatchesOutput(MessageOut previous, MessageIn input, RSAParameters senderPublicKey)

@@ -34,7 +34,7 @@ namespace ByzantineGenerals.Pow.Tests
 
             Message baseMessage = Message.CreateDecisionBase(workingDecision, rsaProvider.PublicKey);
             MessageOut messageOut = new MessageOut(workingDecision, rsaProvider.PublicKey);
-            Message newMessage = Message.CreateNewMessage(baseMessage.Outputs, new List<MessageOut> { messageOut }, rsaProvider);
+            Message newMessage = Message.CreateNewMessage(baseMessage.Outputs, rsaProvider.PublicKey, rsaProvider);
             bool match = Message.InputMatchesOutput(baseMessage.Outputs[0], newMessage.Inputs[0], baseMessage.SenderPublicKey);
 
             Assert.IsTrue(match);
@@ -49,7 +49,7 @@ namespace ByzantineGenerals.Pow.Tests
             Message baseMessage = Message.CreateDecisionBase(Decisions.Attack, rsaProvider1.PublicKey);
             MessageOut messageOut1 = new MessageOut(Decisions.Attack, rsaProvider1.PublicKey);
             MessageOut messageOut2 = new MessageOut(Decisions.Attack, rsaProvider2.PublicKey);
-            Message newMessage = Message.CreateNewMessage(baseMessage.Outputs, new List<MessageOut> { messageOut1, messageOut2 }, rsaProvider1);
+            Message newMessage = Message.CreateNewMessage(baseMessage.Outputs, new List<RSAParameters> { rsaProvider1.PublicKey, rsaProvider2.PublicKey }, rsaProvider1);
 
             Assert.IsTrue(Message.MessageIsConsistent(newMessage));
         }
@@ -63,7 +63,8 @@ namespace ByzantineGenerals.Pow.Tests
             Message baseMessage = Message.CreateDecisionBase(Decisions.Attack, rsaProvider1.PublicKey);
             MessageOut messageOut1 = new MessageOut(Decisions.Attack, rsaProvider1.PublicKey);
             MessageOut messageOut2 = new MessageOut(Decisions.Retreat, rsaProvider2.PublicKey);
-            Message newMessage = Message.CreateNewMessage(baseMessage.Outputs, new List<MessageOut> { messageOut1, messageOut2 }, rsaProvider1);
+            List<MessageOut> outputs = new List<MessageOut> { messageOut1, messageOut2 };
+            Message newMessage = Message.CreateNewMessage(baseMessage.Outputs, outputs, rsaProvider1);
 
             Assert.IsFalse(Message.MessageIsConsistent(newMessage));
         }

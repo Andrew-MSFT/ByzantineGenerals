@@ -28,7 +28,7 @@ namespace ByzantineGenerals.PowBlockchain
             }
         }
 
-        internal void Add(Block block)
+        public void AddBlock(Block block)
         {
             _blocks.Add(block);
         }
@@ -180,7 +180,7 @@ namespace ByzantineGenerals.PowBlockchain
         public Block MineNextBlock(List<Message> messages)
         {
             Block block = Block.MineNewBlock(messages, this.LastBlock.ComputeSHA256());
-            Add(block);
+            AddBlock(block);
             return block;
         }
     }
