@@ -16,7 +16,7 @@ namespace ByzantineGenerals.PowBlockchain
 
             foreach (General general in commandService.GetAllGenerals())
             {
-                general.DeclareIninitialPreference();
+                general.MakeBaseDeclaration();
             }
 
             foreach (General general in commandService.GetAllGenerals())

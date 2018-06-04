@@ -18,7 +18,7 @@ namespace ByzantineGenerals.Pow.Tests
             General general1 = commandService.CreateGeneral(workingDecision);
             General general2 = commandService.CreateGeneral(workingDecision);
 
-            general1.DeclareIninitialPreference();
+            general1.MakeBaseDeclaration();
             Block newBlock = general2.RecievedBlockPool[0];
             Message message = newBlock.Messages[0];
             bool isValid = general2.MessageChain.IsValidMessage(message);
@@ -26,75 +26,14 @@ namespace ByzantineGenerals.Pow.Tests
             Assert.IsTrue(isValid);
         }
 
-        [TestMethod]
-        public void MessageSigning()
-        {
-
-            General general = new General(Decisions.Attack, null, new Blockchain());
-            var recipientHash = HashUtilities.ComputeSHA256(general.PublicKey);
-            MessageOut message = new MessageOut
-            {
-                Decision = Decisions.Attack,
-                RecipientKeyHash = recipientHash
-            };
-            var signed = general.SignMessage(message);
-            bool isValidSignature = HashUtilities.VerifySignature(general.PublicKey, message.ComputeSHA256(), signed);
-
-            Assert.IsTrue(isValidSignature);
-        }
-
-        [TestMethod]
-        public void MismatchedKeys()
-        {
-
-            General general1 = new General(Decisions.Attack, null, new Blockchain());
-            General general2 = new General(Decisions.Attack, null, new Blockchain());
-            var recipientHash = HashUtilities.ComputeSHA256(general1.PublicKey);
-            MessageOut message = new MessageOut
-            {
-                Decision = Decisions.Attack,
-                RecipientKeyHash = recipientHash
-            };
-            var signed = general1.SignMessage(message);
-            bool isValidSignature = HashUtilities.VerifySignature(general2.PublicKey, message.ComputeSHA256(), signed);
-
-            Assert.IsFalse(isValidSignature);
-        }
-
-        [TestMethod]
-        public void MessageWithInvalidSignature()
-        {
-
-            General general1 = new General(Decisions.Attack, null, new Blockchain());
-            General general2 = new General(Decisions.Retreat, null, new Blockchain());
-            var recipientHash = HashUtilities.ComputeSHA256(general1.PublicKey);
-            MessageOut message1 = new MessageOut
-            {
-                Decision = general1.Decision,
-                RecipientKeyHash = recipientHash
-            };
-
-            MessageOut message2 = new MessageOut
-            {
-                Decision = general2.Decision,
-                RecipientKeyHash = recipientHash
-            };
-
-            var signature = general1.SignMessage(message1);
-            byte[] message2SHA = message2.ComputeSHA256();
-            bool isValidSignature = HashUtilities.VerifySignature(general1.PublicKey, message2SHA, signature);
-
-            Assert.IsFalse(isValidSignature);
-        }
-
-        [TestMethod]
+       [TestMethod]
         public void ValidateSenderBlockChain()
         {
             CommandService commandService = new CommandService();
             General general = commandService.CreateGeneral(Decisions.Attack);
             General testGeneral = commandService.CreateGeneral(Decisions.Attack);
 
-            general.DeclareIninitialPreference();
+            general.MakeBaseDeclaration();
             Block recievedBlock = testGeneral.RecievedBlockPool[0];
             bool blockInChain = general.MessageChain.ContainsBlock(recievedBlock);
 
@@ -109,18 +48,15 @@ namespace ByzantineGenerals.Pow.Tests
             General general1 = commandService.CreateGeneral(workingDecision);
             General general2 = commandService.CreateGeneral(workingDecision);
 
-            general1.DeclareIninitialPreference();
+            general1.MakeBaseDeclaration();
             Block newBlock = general2.RecievedBlockPool[0];
             Message message = newBlock.Messages[0];
-
-            byte[] general1TargetHash = HashUtilities.ComputeSHA256(general1.PublicKey);
-            byte[] general2TargetHash = HashUtilities.ComputeSHA256(general2.PublicKey);
 
             MessageOut input = message.Outputs[0];
             MessageOut output = new MessageOut
             {
                 Decision = input.Decision,
-                RecipientKeyHash = general2TargetHash
+                RecipientKeyHash = general2.PublicKeyHash
             };
 
             Message fakeMessage = Message.CreateNewMessage(new List<MessageOut> { input }, general2.PublicKey, general1);
@@ -140,18 +76,15 @@ namespace ByzantineGenerals.Pow.Tests
             General general1 = commandService.CreateGeneral(workingDecision);
             General general2 = commandService.CreateGeneral(workingDecision);
 
-            general1.DeclareIninitialPreference();
+            general1.MakeBaseDeclaration();
             Block newBlock = general2.RecievedBlockPool[0];
             Message message = newBlock.Messages[0];
-
-            byte[] general1TargetHash = HashUtilities.ComputeSHA256(general1.PublicKey);
-            byte[] general2TargetHash = HashUtilities.ComputeSHA256(general2.PublicKey);
 
             MessageOut input = message.Outputs[0];
             MessageOut output = new MessageOut
             {
                 Decision = input.Decision,
-                RecipientKeyHash = general2TargetHash
+                RecipientKeyHash = general2.PublicKeyHash
             };
 
             Message validMessage = Message.CreateNewMessage(new List<MessageOut> { input }, general2.PublicKey, general1);
@@ -171,22 +104,19 @@ namespace ByzantineGenerals.Pow.Tests
             General general1 = commandService.CreateGeneral(workingDecision);
             General general2 = commandService.CreateGeneral(workingDecision);
 
-            general1.DeclareIninitialPreference();
+            general1.MakeBaseDeclaration();
             Block newBlock = general2.RecievedBlockPool[0];
             Message message = newBlock.Messages[0];
-
-            byte[] general1TargetHash = HashUtilities.ComputeSHA256(general1.PublicKey);
-            byte[] general2TargetHash = HashUtilities.ComputeSHA256(general2.PublicKey);
 
             MessageOut input = new MessageOut
             {
                 Decision = Decisions.Retreat,
-                RecipientKeyHash = general1TargetHash
+                RecipientKeyHash = general1.PublicKeyHash
             };
             MessageOut output = new MessageOut
             {
                 Decision = Decisions.Retreat,
-                RecipientKeyHash = general2TargetHash
+                RecipientKeyHash = general2.PublicKeyHash
             };
 
             Message fakeMessage = Message.CreateNewMessage(new List<MessageOut> { input }, general2.PublicKey, general1);
@@ -208,13 +138,13 @@ namespace ByzantineGenerals.Pow.Tests
             General general1 = commandService.CreateGeneral(workingDecision);
             General general2 = commandService.CreateGeneral(workingDecision);
 
-            general1.DeclareIninitialPreference();
+            general1.MakeBaseDeclaration();
 
             List<MessageOut> publicDecisions = new List<MessageOut>();
             MessageOut messageOut = general1.MessageChain[general1.MessageChain.Count - 1].Messages[0].Outputs[0];
             List<MessageOut> inputs = new List<MessageOut> { messageOut };
 
-            MessageOut message = new MessageOut(general1.Decision, general2.PublicKey);
+            MessageOut message = new MessageOut(workingDecision, general2.PublicKey);
             publicDecisions.Add(message);
 
             Message broadCastMessage = Message.CreateNewMessage(inputs, general2.PublicKey, general1);

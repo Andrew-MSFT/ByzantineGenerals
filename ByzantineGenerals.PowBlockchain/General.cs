@@ -20,8 +20,8 @@ namespace ByzantineGenerals.PowBlockchain
 
     public class General : IRSACryptoProvider
     {
-        public Decisions Decision { get; private set; }
         public RSAParameters PublicKey { get; private set; }
+        public byte[] PublicKeyHash { get; private set; }
         public Blockchain MessageChain { get; private set; }
         internal List<Message> RecievedMessagePool { get; private set; } = new List<Message>();
         internal List<Message> OrphanedMessagePool { get; private set; } = new List<Message>();
@@ -32,28 +32,26 @@ namespace ByzantineGenerals.PowBlockchain
         private Block _myBlock;
         private RSACryptoServiceProvider _rSA = new RSACryptoServiceProvider();
         private CommandService _commandService;
+        private Decisions _currentDecision { get; set; }
         private Dictionary<RSAParameters, Decisions> _currentDecisionTally = new Dictionary<RSAParameters, Decisions>();
+        internal List<MessageOut> RecievedOrders = new List<MessageOut>();
 
         internal General(Decisions decision, CommandService commandService, Blockchain currentChain)
         {
-            this.Decision = decision;
             this.PublicKey = _rSA.ExportParameters(false);
             this.MessageChain = new Blockchain(currentChain);
 
+            PublicKeyHash = HashUtilities.ComputeSHA256(this.PublicKey);
+            _currentDecision = decision;
             _commandService = commandService;
         }
 
-        public void DeclareIninitialPreference()
+        public void MakeBaseDeclaration()
         {
-            Message initialDecision = Message.CreateDecisionBase(this.Decision, this.PublicKey);
+            Message initialDecision = Message.CreateDecisionBase(_currentDecision, this.PublicKey);
             this.RecievedMessagePool.Insert(0, initialDecision);
             _myBlock = MineNewBlock();
-            DecisionArrived(this.PublicKey, this.Decision);
-        }
-
-        public void DeclareCurrentDecision()
-        {
-
+            DecisionArrived(this.PublicKey, _currentDecision);
         }
 
         private void DecisionArrived(RSAParameters generalsKey, Decisions decision)
@@ -109,7 +107,6 @@ namespace ByzantineGenerals.PowBlockchain
                     this.OrphanedMessagePool.Add(message);
                 }
             }
-            this.RecievedMessagePool.Clear();
 
             byte[] previousHash = MessageChain.LastBlock.ComputeSHA256();
             Block block = Block.MineNewBlock(transactions, previousHash);
@@ -117,6 +114,7 @@ namespace ByzantineGenerals.PowBlockchain
             this.MessageChain.AddBlock(block);
             _commandService.NotifyNewBlockMined(block, this.PublicKey);
 
+            this.RecievedMessagePool.Clear();
             return block;
         }
 
@@ -148,6 +146,14 @@ namespace ByzantineGenerals.PowBlockchain
                 foreach (var message in block.Messages)
                 {
                     this.RecievedMessagePool.Remove(message);
+                    
+                    foreach(var messageOut in message.Outputs)
+                    {
+                        if (messageOut.RecipientKeyHash.SequenceEqual(PublicKeyHash))
+                        {
+                            this.RecievedOrders.Add(messageOut);
+                        }
+                    }
                 }
             }
             else
