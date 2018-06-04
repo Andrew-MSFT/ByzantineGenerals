@@ -73,13 +73,12 @@ namespace ByzantineGenerals.PowBlockchain
             }
         }
 
-        public static byte[] SignMessage(MessageOut message, RSACryptoServiceProvider rsaProvider)
+        public static byte[] SignMessage(MessageOut message, RSAPKCS1SignatureFormatter rSAFormatter)
         {
             string serialized = JsonConvert.SerializeObject(message);
             byte[] hashedValue = HashUtilities.ComputeSHA256(serialized);
             //Create an RSAPKCS1SignatureFormatter object and pass it the   
             //RSACryptoServiceProvider to transfer the private key.  
-            RSAPKCS1SignatureFormatter rSAFormatter = new RSAPKCS1SignatureFormatter(rsaProvider);
 
             //Set the hash algorithm  
             rSAFormatter.SetHashAlgorithm("SHA256");

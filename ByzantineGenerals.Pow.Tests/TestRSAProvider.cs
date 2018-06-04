@@ -16,7 +16,8 @@ namespace ByzantineGenerals.Pow.Tests
 
         public byte[] SignMessage(MessageOut message)
         {
-            return HashUtilities.SignMessage(message, _rSA);
+            RSAPKCS1SignatureFormatter rSAFormatter = new RSAPKCS1SignatureFormatter(_rSA);
+            return HashUtilities.SignMessage(message, rSAFormatter);
         }
 
         public static (RSAParameters FullKey, RSAParameters PublicKey) GenerateRSAKey()

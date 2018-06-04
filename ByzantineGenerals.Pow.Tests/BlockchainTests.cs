@@ -25,7 +25,6 @@ namespace ByzantineGenerals.Pow.Tests
         [TestMethod]
         public void BlockValidation()
         {
-            CommandService commandService = new CommandService();
             TestRSAProvider rsaProvider = new TestRSAProvider();
             Blockchain blockchain = new Blockchain();
             Message baseMessage = Message.CreateDecisionBase(Decisions.Attack, rsaProvider.PublicKey);
@@ -73,6 +72,27 @@ namespace ByzantineGenerals.Pow.Tests
             bool isValid = blockchain.IsValidMessage(passedOnDecision);
 
             Assert.IsTrue(isValid);
+        }
+
+        [TestMethod]
+        public void NonChainBasedDecision()
+        {
+            Blockchain blockchain = new Blockchain();
+            TestRSAProvider sender = new TestRSAProvider();
+            TestRSAProvider recipient = new TestRSAProvider();
+            //Send the decision base to the sender
+            Message decisionBase = Message.CreateDecisionBase(Decisions.Attack, sender.PublicKey);
+            //Mine the initial decision into a block so it can be used
+            Block decisionBaseBlock = blockchain.MineNextBlock(new List<Message> { decisionBase });
+            //Send the decision to the next recipient
+            Message sentDecision = Message.CreateNewMessage(decisionBase.Outputs, recipient.PublicKey, sender);
+            Block sentDecisionBlock = blockchain.MineNextBlock(new List<Message> { sentDecision });
+            MessageOut madeupInput = new MessageOut(Decisions.Attack, recipient.PublicKey);
+            Message passedOnDecision = Message.CreateNewMessage(new List<MessageOut> { madeupInput }, sender.PublicKey, recipient);
+
+            bool isValid = blockchain.IsValidMessage(passedOnDecision);
+
+            Assert.IsFalse(isValid);
         }
 
     }
